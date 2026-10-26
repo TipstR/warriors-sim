@@ -44,6 +44,14 @@ public class World {
     /// <summary>The year starts with newleaf, and every season lasts the same number of moons.</summary>
     public Season Season => (Season)((Day - 1) / DaysPerSeason % 4);
 
+    /// <summary>The current moon, starting at 1.</summary>
+    public int Moon => (Day - 1) / Tuning.DaysPerMoon + 1;
+
+    /// <summary>Whether the cat slept during the last tick.</summary>
+    public bool IsSleeping(Cat cat) {
+        return _sleeping.Contains(cat);
+    }
+
     /// <summary>Advances the world by one tick (6 hours).</summary>
     public void Tick() {
         if (TimeOfDay == TimeOfDay.Dawn && (Day - 1) % DaysPerSeason == 0)
