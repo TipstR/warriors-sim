@@ -5,4 +5,8 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>WarriorsSim</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="docs\rules.md" />
+    <Content Include="docs\Warriors_Sim_Notes.md" />
+  </ItemGroup>
 </Project>
