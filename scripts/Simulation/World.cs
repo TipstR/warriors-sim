@@ -11,15 +11,21 @@ public class World
 {
 	private readonly Random _random;
 	private readonly Action<LogLevel, string> _log;
-	private List<Cat> _lastPatrol = new();
+	private List<Cat> _lastHunters = new();
 
 	// Statistics for the moon summary
 	private int _miceCaughtThisMoon;
 	private int _mealsMissedThisMoon;
+	private int _timesStarvedThisMoon;
 
 	public Clan Clan { get; }
 	public int Day { get; private set; } = 1;
 	public TimeOfDay TimeOfDay { get; private set; } = TimeOfDay.Dawn;
+
+	/// <summary>The year starts with newleaf, and every season lasts the same number of moons.</summary>
+	public Season Season => (Season)((Day - 1) / DaysPerSeason % 4);
+
+	private const int DaysPerSeason = Tuning.DaysPerMoon * Tuning.MoonsPerSeason;
 
 	/// <param name="log">Called with every line of the log and its level, e.g. to print it.</param>
 	public World(Clan clan, int seed, Action<LogLevel, string> log)
@@ -32,6 +38,9 @@ public class World
 	/// <summary>Advances the world by one tick (6 hours).</summary>
 	public void Tick()
 	{
+		if (TimeOfDay == TimeOfDay.Dawn && (Day - 1) % DaysPerSeason == 0)
+			Log($"{Season} begins.", LogLevel.Summary);
+
 		LoseSatiation();
 
 		if (TimeOfDay == TimeOfDay.Night)
@@ -43,7 +52,7 @@ public class World
 		}
 		else
 		{
-			SendHuntingPatrolIfNeeded();
+			SendHuntingPatrolsIfNeeded();
 			FeedHungryCats();
 		}
 
@@ -58,22 +67,62 @@ public class World
 			cat.LoseSatiation(Tuning.SatiationLossPerTick);
 
 			if (cat.IsStarving && !wasStarving)
+			{
 				Log($"{cat} is starving!");
+				_timesStarvedThisMoon++;
+			}
 		}
 	}
 
-	private void SendHuntingPatrolIfNeeded()
+	/// <summary>
+	/// If the pile has fewer mice than there are cats, the leader sends patrols
+	/// until they are expected to catch enough to make up the difference.
+	/// The leader plans with normal hunting chances and doesn't account for the
+	/// season, so patrols bring back more than expected in greenleaf and less in leaf-bare.
+	/// </summary>
+	private void SendHuntingPatrolsIfNeeded()
 	{
-		if (Clan.FreshKillPile.Mice >= Clan.Cats.Count)
+		int miceNeeded = Clan.Cats.Count - Clan.FreshKillPile.Mice;
+		if (miceNeeded <= 0)
 			return;
 
-		var patrol = ChooseHuntingPatrol();
-		if (patrol.Count == 0)
+		var available = AvailableHunters();
+		if (available.Count == 0)
 		{
 			Log("The pile is low, but no cat can hunt.");
 			return;
 		}
 
+		var hunters = new List<Cat>();
+		float expectedCatch = 0f;
+		while (expectedCatch < miceNeeded * Tuning.PatrolPlanningMargin && available.Count > 0)
+		{
+			var patrol = available.Take(Tuning.PatrolSize).ToList();
+			available.RemoveRange(0, patrol.Count);
+
+			expectedCatch += patrol.Sum(c => c.CatchChance * Tuning.AttemptsPerCat);
+			SendHuntingPatrol(patrol);
+			hunters.AddRange(patrol);
+		}
+
+		_lastHunters = hunters;
+	}
+
+	/// <summary>
+	/// Cats that can hunt and were not out hunting last time, best hunters first.
+	/// The leader and deputy come last, so they only go if there aren't enough other cats.
+	/// </summary>
+	private List<Cat> AvailableHunters()
+	{
+		return Clan.Cats
+			.Where(c => c.CanHunt && !_lastHunters.Contains(c))
+			.OrderBy(c => c.Rank is Rank.Leader or Rank.Deputy)
+			.ThenByDescending(c => c.CatchChance)
+			.ToList();
+	}
+
+	private void SendHuntingPatrol(List<Cat> patrol)
+	{
 		var catches = new List<string>();
 		int total = 0;
 		foreach (var cat in patrol)
@@ -84,32 +133,19 @@ public class World
 		}
 
 		Clan.FreshKillPile.Add(total);
-		_lastPatrol = patrol;
 		_miceCaughtThisMoon += total;
 		Log($"Hunting patrol caught {total} mice ({string.Join(", ", catches)}). Pile: {Clan.FreshKillPile.Mice}");
-	}
-
-	/// <summary>
-	/// Picks the best hunters who were not on the previous patrol.
-	/// The leader and deputy only go if there aren't enough other cats.
-	/// </summary>
-	private List<Cat> ChooseHuntingPatrol()
-	{
-		return Clan.Cats
-			.Where(c => c.CanHunt && !_lastPatrol.Contains(c))
-			.OrderBy(c => c.Rank is Rank.Leader or Rank.Deputy)
-			.ThenByDescending(c => c.CatchChance)
-			.Take(Tuning.PatrolSize)
-			.ToList();
 	}
 
 	/// <summary>Rolls every hunting attempt of one cat and returns how many mice it caught.</summary>
 	private int Hunt(Cat cat)
 	{
+		float chance = Math.Clamp(cat.CatchChance * Tuning.SeasonCatchMultiplier(Season), 0f, 1f);
+
 		int caught = 0;
 		for (int i = 0; i < Tuning.AttemptsPerCat; i++)
 		{
-			if (_random.NextDouble() < cat.CatchChance)
+			if (_random.NextDouble() < chance)
 				caught++;
 		}
 		return caught;
@@ -157,12 +193,14 @@ public class World
 		float averageSatiation = Clan.Cats.Average(c => c.Satiation);
 		int starving = Clan.Cats.Count(c => c.IsStarving);
 
-		Log($"Moon {Day / Tuning.DaysPerMoon} over. Mice caught: {_miceCaughtThisMoon}, "
-			+ $"meals missed: {_mealsMissedThisMoon}, pile: {Clan.FreshKillPile.Mice}, "
-			+ $"average satiation: {averageSatiation:0}, starving: {starving}", LogLevel.Summary);
+		Log($"Moon {Day / Tuning.DaysPerMoon} ({Season}) over. Mice caught: {_miceCaughtThisMoon}, "
+			+ $"meals missed: {_mealsMissedThisMoon}, times a cat starved: {_timesStarvedThisMoon}, "
+			+ $"pile: {Clan.FreshKillPile.Mice}, average satiation: {averageSatiation:0}, "
+			+ $"starving now: {starving}", LogLevel.Summary);
 
 		_miceCaughtThisMoon = 0;
 		_mealsMissedThisMoon = 0;
+		_timesStarvedThisMoon = 0;
 	}
 
 	private void AdvanceTime()

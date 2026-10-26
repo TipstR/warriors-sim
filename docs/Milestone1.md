@@ -51,8 +51,8 @@ Medicine cats and queens come later.
 ### Eating
 
 - Cats can eat at any tick except night.
-- A cat eats when its satiation is **below 50** and there is prey on the
-  pile. *(Proposed)*
+- A cat eats when its satiation is **below 75** and there is prey on the
+  pile, so it keeps a reserve and survives a missed meal and the night.
 - A cat eats one piece per tick at most. *(Proposed)*
 - If there isn't enough prey for everyone, cats eat in this order:
   1. Kits
@@ -66,7 +66,10 @@ Medicine cats and queens come later.
 ### Hunting patrols
 
 - Checked at dawn, sunhigh and evening: if the pile has **fewer pieces than
-  there are cats**, the leader sends a hunting patrol.
+  there are cats**, the leader sends hunting patrols. The leader keeps sending
+  patrols until they are expected to catch enough to make up the difference,
+  or until no hunters are left. The leader plans with a margin of 20% and
+  doesn't account for the season.
 - **Who can hunt:** warriors and apprentices. The leader and deputy can
   join if needed. Kits and elders never hunt. *(Proposed)*
 - **Patrol size:** 4 cats.
@@ -81,6 +84,18 @@ Medicine cats and queens come later.
 - An average patrol brings back about 11 mice, so up to about 33 a day if all
   three patrols go out. 10 cats need about 27.
 
+### Seasons
+
+- The year starts with newleaf. Each season lasts **3 moons** (90 days).
+- The season changes the catch chance of every hunting attempt:
+
+| Season    | Catch chance | Goal                                      |
+|-----------|--------------|-------------------------------------------|
+| Newleaf   | × 1.0        | not everyone is always fed, nobody starves |
+| Greenleaf | × 1.5        | no cat goes hungry                        |
+| Leaf-fall | × 1.0        | not everyone is always fed, nobody starves |
+| Leaf-bare | × 0.8        | starving cats are to be expected          |
+
 ## Tuning values
 
 All numbers above live in **one place in the code**, so they can be
@@ -92,8 +107,9 @@ adjusted without searching through the rules.
 | Satiation max             | 100         |
 | Ticks until empty         | 6           |
 | Mouse satiation           | 25          |
-| Eat below satiation       | 50          |
+| Eat below satiation       | 75          |
 | Patrol size               | 4           |
+| Patrol planning margin    | × 1.2       |
 | Attempts per cat          | 6           |
 | Base catch chance         | 20%         |
 | Per hunting skill point   | +0.5%       |
