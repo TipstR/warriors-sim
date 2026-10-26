@@ -5,8 +5,12 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>WarriorsSim</RootNamespace>
   </PropertyGroup>
+  <!-- Non-code files, so they show up in Rider's project view -->
   <ItemGroup>
-    <Content Include="docs\rules.md" />
-    <Content Include="docs\Warriors_Sim_Notes.md" />
+    <None Include="project.godot" />
+    <None Include="docs\**\*" />
+    <None Include="scenes\**\*" />
+    <None Include="assets\**\*" />
+    <None Include="scripts\**\*.uid" />
   </ItemGroup>
 </Project>

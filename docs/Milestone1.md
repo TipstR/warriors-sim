@@ -76,13 +76,13 @@ Medicine cats and queens come later.
 - **Who is picked:** the best hunters who were not on the previous patrol.
   ("Best rested" needs a sleep need, which comes later.) *(Proposed)*
 - **Result:** each cat gets 6 attempts per patrol. *(Proposed)*
-  - chance per attempt = 20% + hunting × 0.5% + (diligence − 50) × 0.2%
+  - chance per attempt = 10% + hunting × 0.6% + (diligence − 50) × 0.2%
   - each success = 1 mouse on the pile
   - no carrying limit, so good hunters make a real difference: a weak, lazy
-    cat (hunting 0, diligence 0) catches about 0.6 mice per patrol, an
-    average cat about 2.7 and the best possible hunter about 4.8
-- An average patrol brings back about 11 mice, so up to about 33 a day if all
-  three patrols go out. 10 cats need about 27.
+    cat (hunting 0, diligence 0) catches nothing, an average cat (50/50)
+    about 2.4 mice per patrol and the best possible hunter about 4.8
+- An average patrol brings back about 10 mice. Because the leader can send
+  several patrols at once, the catch grows with the number of hunters.
 
 ### Seasons
 
@@ -92,9 +92,9 @@ Medicine cats and queens come later.
 | Season    | Catch chance | Goal                                      |
 |-----------|--------------|-------------------------------------------|
 | Newleaf   | × 1.0        | not everyone is always fed, nobody starves |
-| Greenleaf | × 1.5        | no cat goes hungry                        |
+| Greenleaf | × 1.3        | no cat goes hungry                        |
 | Leaf-fall | × 1.0        | not everyone is always fed, nobody starves |
-| Leaf-bare | × 0.8        | starving cats are to be expected          |
+| Leaf-bare | × 0.93       | starving cats are to be expected          |
 
 ## Tuning values
 
@@ -111,10 +111,10 @@ adjusted without searching through the rules.
 | Patrol size               | 4           |
 | Patrol planning margin    | × 1.2       |
 | Attempts per cat          | 6           |
-| Base catch chance         | 20%         |
-| Per hunting skill point   | +0.5%       |
+| Base catch chance         | 10%         |
+| Per hunting skill point   | +0.6%       |
 | Per diligence point (±50) | ±0.2%       |
-| Days to simulate          | 30          |
+| Days to simulate          | 720         |
 | Random seed               | 12345       |
 
 ## Technical decisions

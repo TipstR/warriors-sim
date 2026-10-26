@@ -27,9 +27,52 @@ Three pillars:
    motivations. Clan politics come out of these personalities instead of being
    scripted. **[Decided]**
 
+Genre: **an emergent storytelling game** with a **RimWorld-like feeling**,
+not a kids' game like most Warriors games. Stories aren't scripted. They come
+out of systems interacting: a bad leaf-bare, a lazy hunter, an ambitious
+warrior, a leader who makes the wrong call. **[Decided]**
+
+What this means for the design **[Proposed]**:
+
+- **Consequences stick.** Cats can die from starvation, injuries, illness or
+  fights. Scars, grudges and losses stay.
+- **Systems connect.** Hunger affects mood, mood affects loyalty, loyalty
+  affects whether a cat follows the leader. The more systems touch each other,
+  the more stories they produce.
+- **Cats remember.** Relationships and memories ("Darkstripe let Graypaw go
+  hungry in leaf-bare") turn simulation results into stories.
+- **The log is the story.** Events should be written so they read like a
+  chronicle of the Clan, not like debug output.
+- **Pacing.** Like RimWorld's storytellers, something may eventually decide
+  when big events (fires, floods, badger attacks) happen, so there are quiet
+  moons and hard ones.
+
+Design principle: **skill matters.** A new apprentice can't feed the Clan, but
+a very good hunter can. A sick or injured cat should make a noticeable
+difference. Balancing should keep the gap between weak and strong cats large.
+**[Decided]**
+
 ## 2. The Player
 
-- The player controls **exactly one cat** for the whole game. **[Decided]**
+- The player controls **one cat at a time**. **[Decided]**
+- Inspired by **Crusader Kings 3** and the books: main characters die, but the
+  story goes on. It's the story of all the Clans, not of one cat.
+  **[Decided]**
+- Like in **The Sims**, the player can **switch to another cat at any time**,
+  not only when their cat dies. It's a singleplayer game, and players make
+  their own rules. **[Decided]** Examples:
+  - continue as your former apprentice after your cat dies
+  - let your old cat retire to the elders' den and take over a young warrior
+  - try out being a medicine cat by taking over the new medicine cat
+    apprentice
+- The goal is a **story across generations**: playing as a cat and looking at
+  an older cat with the thought "I trained him when he was my apprentice."
+  Past player cats stay part of the world and its history. **[Decided]**
+- Whether the player can switch to any cat in **any Clan** (or loners,
+  rogues, kittypets) or only within their own Clan is **[Open]**.
+- Because any cat can become the player's cat, **every cat has to be
+  simulated as a full character**: needs, skills, relationships and memories,
+  not just numbers. **[Proposed]**
 - Life path: made an apprentice → trained as a **warrior** or **medicine cat**
   → possibly **deputy** → possibly **leader**. **[Decided]**
 - As deputy or leader, the player can **manage** other cats (e.g. assign them
@@ -190,11 +233,10 @@ Still to decide **[Open]**:
   **[Decided]**
 - First needs and basic leader decisions are implemented. **[Decided]**
 - This is essentially the **abstract simulation level**. **[Proposed]**
-- Clan composition (leader, deputy, ...) is being written down in your notes.
-  **[Open]**
-- Suggested definition of done **[Proposed]**: one Clan of about 10 cats runs
-  for 100 simulated days. The leader assigns hunting and border patrols, cats
-  eat from the fresh-kill pile, and everything is written to a log.
+- Details and rules: see `docs/Milestone1.md`.
+- **Status: the core works.** ThunderClan (16 cats) runs for two years with
+  seasons. The leader sends hunting patrols, cats eat from the fresh-kill
+  pile, and the full log is written to `logs/simulation.log`.
 
 ### Milestone 2 – First Territory
 
@@ -209,9 +251,63 @@ Still to decide **[Open]**:
 - Other Clans, Gatherings, predators, disasters
 - Rank progression (apprentice → warrior / medicine cat → deputy → leader)
 
-## 9. Suggested Next Step
+## 9. Current State and Next Steps
 
-Write down the exact rules for **one hunting patrol at the abstract level**:
-which values go into the roll (skill, personality, season, weather, territory,
-number of cats) and what comes out (amount of prey, injuries, events). It's
-small enough to code as the first real piece of the game.
+### Already built
+
+- Cats with rank, age, hunting skill, diligence and satiation
+- ThunderClan from the start of *Into the Wild* (16 cats)
+- Time: 4 ticks per day, moons and the four seasons
+- Fresh-kill pile and eating order
+- Leader AI for hunting patrols (several patrols at once, best hunters first,
+  planning margin, no back-to-back patrols)
+- Seasons change the hunting chance
+- Full log to a file, moon summaries in Godot's Output panel
+
+### Possible next steps **[Proposed]**
+
+Ordered so that each step makes the next one more interesting:
+
+1. **Consequences of hunger:** starving cats hunt worse, get weaker, and can
+   die. First real stories ("the hard leaf-bare").
+2. **Aging and training:** cats age every moon. Apprentices get better at
+   hunting, kits become apprentices, warriors become elders. Fits "skill
+   matters".
+3. **Mentors:** every apprentice has a mentor, and a good mentor trains
+   faster. First relationship between cats, and the basis for "I trained him".
+4. **Injuries:** hunting can hurt a cat, and an injured cat hunts worse. First
+   step toward the health system.
+5. **Chronicle:** important events (deaths, new apprentices, new warriors) go
+   into a separate log that reads like the Clan's history.
+
+## 10. Story Mode (Idea)
+
+A mode in which the story of the books *can* happen again, but doesn't have
+to. **[Proposed]**
+
+- **Book start (scenario):** the world starts at the beginning of *Into the
+  Wild*, with the cats, ranks, mentors, relationships and personalities from
+  the book. After that, the simulation runs freely. Like CK3's bookmarks or
+  RimWorld's scenarios. `StartingClans` is already a first version of this.
+- **Story events with conditions:** important moments from the books are
+  events that only happen when the simulation makes them possible. Example:
+  *Tigerclaw's betrayal* only happens if Tigerclaw is ambitious, isn't leader
+  yet and his loyalty to Bluestar is low. If things go differently, the event
+  doesn't happen or happens to another cat.
+- **Story director (optional):** gently pushes the world toward the books,
+  e.g. by letting Tigerclaw's ambition grow a little faster, without forcing
+  anything.
+- **No fixed script:** events are never forced against the simulation (e.g.
+  "Redtail must die at Sunningrocks"). That would fight the simulation and
+  needs a lot of special cases.
+
+What this means for later systems:
+
+- Story events use the **same event system** as emergent events (fires,
+  badger attacks, rivalries), so story mode is just a set of special events.
+- That event system needs to check conditions about cats, like "is
+  ambitious", "loyalty to the leader is low" or "is deputy".
+
+Note: replaying the books' plot is closer to the original work than using the
+setting alone. Fine for a personal or fan project, but relevant if the game is
+ever released commercially.
