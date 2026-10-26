@@ -22,14 +22,20 @@ public class Clan {
     /// <summary>The Clan's leader, or null if the Clan has none.</summary>
     public Cat Leader => _cats.FirstOrDefault(c => c.Rank == Rank.Leader);
 
+    /// <summary>The Clan's deputy, or null if the Clan has none.</summary>
+    public Cat Deputy => _cats.FirstOrDefault(c => c.Rank == Rank.Deputy);
+
     public void AddCat(Cat cat) {
         _cats.Add(cat);
     }
 
-    /// <summary>Moves a cat from the living to the dead.</summary>
+    /// <summary>Moves a cat from the living to the dead. Its mate becomes free to find a new one.</summary>
     public void RecordDeath(Cat cat) {
-        if (_cats.Remove(cat))
-            _dead.Add(cat);
+        if (!_cats.Remove(cat))
+            return;
+
+        _dead.Add(cat);
+        cat.Mate?.LoseMate();
     }
 
     /// <summary>How the Clan decides who eats first. Later this will come from the leader's personality.</summary>
@@ -40,6 +46,13 @@ public class Clan {
     ///     <see cref="FeedingPolicy" />. With the same score, the hungriest cat eats first.
     /// </summary>
     public IEnumerable<Cat> CatsInEatingOrder() {
-        return _cats.OrderByDescending(FeedingPolicy.Score).ThenBy(c => c.Satiation);
+        var famine = IsInFamine;
+        return _cats.OrderByDescending(c => FeedingPolicy.Score(c, famine)).ThenBy(c => c.Satiation);
     }
+
+    /// <summary>
+    ///     A famine: at least <see cref="Tuning.FamineStarvingCats" /> cats carry starvation stacks.
+    ///     Elders and queens then help with hunting, and most leaders feed the hunters first.
+    /// </summary>
+    public bool IsInFamine => _cats.Count(c => c.StarvationStacks > 0) >= Tuning.FamineStarvingCats;
 }

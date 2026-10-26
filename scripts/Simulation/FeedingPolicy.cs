@@ -7,40 +7,49 @@ namespace WarriorsSim.Simulation;
 /// </summary>
 /// <param name="StarvingFirst">Bonus for cats that are starving right now. A high value means starving cats always eat first.</param>
 /// <param name="Urgency">Weight for how close a cat is to death (starvation stacks).</param>
-/// <param name="Compassion">Weight for protecting the weak: kits, elders, apprentices.</param>
+/// <param name="Compassion">Weight for protecting the weak: kits, queens, elders, apprentices.</param>
 /// <param name="Pragmatism">Weight for feeding the cats the Clan needs to survive: the best hunters.</param>
-/// <param name="WarriorCode">Weight for the warrior code's order: kits, elders, leader, deputy, warriors, apprentices.</param>
+/// <param name="WarriorCode">Weight for the warrior code's order: kits, queens, elders, leader, deputy, warriors, apprentices.</param>
+/// <param name="FamineHunterPriority">
+///     Extra weight for the hunters during a famine, so the Clan stays able to hunt. Added to Pragmatism.
+/// </param>
 public record FeedingPolicy(
     float StarvingFirst,
     float Urgency,
     float Compassion,
     float Pragmatism,
-    float WarriorCode) {
-    /// <summary>Starving cats first, then a mix of everything.</summary>
-    public static readonly FeedingPolicy Balanced = new(10f, 1f, 0.5f, 0.5f, 0.5f);
+    float WarriorCode,
+    float FamineHunterPriority) {
+    /// <summary>Starving cats first, then a mix of everything. In a famine, the hunters come first.</summary>
+    public static readonly FeedingPolicy Balanced = new(10f, 1f, 0.5f, 0.5f, 0.5f, 2f);
 
-    /// <summary>Protects the weak, even when it costs the Clan (a Firestar).</summary>
-    public static readonly FeedingPolicy Compassionate = new(10f, 1f, 2f, 0f, 0.5f);
+    /// <summary>Protects the weak, even when it costs the Clan (a Firestar). Only reluctantly favors hunters in a famine.</summary>
+    public static readonly FeedingPolicy Compassionate = new(10f, 1f, 2f, 0f, 0.5f, 0.5f);
 
     /// <summary>Feeds whoever keeps the Clan alive. The weak die first (a Tigerclaw).</summary>
-    public static readonly FeedingPolicy Ruthless = new(0f, 0f, 0f, 2f, 0f);
+    public static readonly FeedingPolicy Ruthless = new(0f, 0f, 0f, 2f, 0f, 2f);
 
-    /// <summary>Follows the warrior code to the letter, no matter who starves.</summary>
-    public static readonly FeedingPolicy ByTheCode = new(0f, 0f, 0f, 0f, 1f);
+    /// <summary>Follows the warrior code to the letter, no matter who starves, even in a famine.</summary>
+    public static readonly FeedingPolicy ByTheCode = new(0f, 0f, 0f, 0f, 1f, 0f);
 
-    public float Score(Cat cat) {
+    /// <param name="famine">Whether the Clan is in a famine right now, see <see cref="Clan.IsInFamine" />.</param>
+    public float Score(Cat cat, bool famine) {
         var starving = cat.IsStarving ? 1f : 0f;
         var nearDeath = (float)cat.StarvationStacks / Tuning.StarvationStacksToDie;
+        var pragmatism = Pragmatism + (famine ? FamineHunterPriority : 0f);
 
         return StarvingFirst * starving
                + Urgency * nearDeath
                + Compassion * Vulnerability(cat)
-               + Pragmatism * Usefulness(cat)
+               + pragmatism * Usefulness(cat)
                + WarriorCode * WarriorCodeRank(cat);
     }
 
     /// <summary>How much the cat needs protecting, from 0 to 1.</summary>
     private static float Vulnerability(Cat cat) {
+        if (cat.IsQueen)
+            return 1f;
+
         return cat.Rank switch {
             Rank.Kit => 1f,
             Rank.Elder => 1f,
@@ -54,8 +63,11 @@ public record FeedingPolicy(
         return cat.CanHunt ? (float)cat.Hunting / Tuning.SkillMax : 0f;
     }
 
-    /// <summary>The warrior code's eating order, from 1 (eats first) to 0 (eats last).</summary>
+    /// <summary>The warrior code's eating order, from 1 (eats first) to 0 (eats last): kits, queens, elders, ...</summary>
     private static float WarriorCodeRank(Cat cat) {
+        if (cat.IsQueen)
+            return 0.9f;
+
         return cat.Rank switch {
             Rank.Kit => 1f,
             Rank.Elder => 0.8f,

@@ -3,22 +3,69 @@ using System;
 namespace WarriorsSim.Simulation;
 
 public class Cat {
-    public Cat(string name, Rank rank, int ageMoons, int hunting, int diligence) {
-        Name = name;
+    public Cat(string name, Rank rank, Sex sex, int ageMoons, int hunting, int diligence,
+        Cat mother = null, Cat father = null) {
+        (Prefix, Suffix) = CatNames.Split(name);
         Rank = rank;
+        Sex = sex;
         AgeMoons = ageMoons;
         Hunting = Math.Clamp(hunting, Tuning.SkillMin, Tuning.SkillMax);
         Diligence = Math.Clamp(diligence, Tuning.SkillMin, Tuning.SkillMax);
+        Mother = mother;
+        Father = father;
         Satiation = Tuning.SatiationMax;
         Energy = Tuning.EnergyMax;
     }
 
-    public string Name { get; }
-    public Rank Rank { get; set; }
-    public int AgeMoons { get; set; }
+    public Sex Sex { get; }
+
+    /// <summary>The cat's mother, or null if unknown.</summary>
+    public Cat Mother { get; }
+
+    /// <summary>The cat's father, or null if unknown.</summary>
+    public Cat Father { get; }
+
+    /// <summary>The cat's mate, or null. Only living cats are mates, see <see cref="Clan.RecordDeath" />.</summary>
+    public Cat Mate { get; private set; }
+
+    /// <summary>Days until the kits are born, or null if the cat isn't expecting kits.</summary>
+    public int? PregnancyDaysLeft { get; private set; }
+
+    /// <summary>The father of the kits she is expecting.</summary>
+    public Cat FatherOfUnbornKits { get; private set; }
+
+    public bool IsPregnant => PregnancyDaysLeft.HasValue;
+
+    /// <summary>Whether she is nursing kits in the nursery. Set by the world every tick.</summary>
+    public bool IsNursing { get; set; }
+
+    /// <summary>
+    ///     How many kits this queen's milk feeds right now. The queens in the nursery share all kits,
+    ///     so this can be a fraction. Set by the world every tick.
+    /// </summary>
+    public float MilkLoad { get; set; }
+
+    /// <summary>A queen is a she-cat who is expecting or nursing kits.</summary>
+    public bool IsQueen => IsPregnant || IsNursing;
+
+    /// <summary>Nursing queens and queens close to giving birth stay in the nursery.</summary>
+    public bool IsInNursery => IsNursing || PregnancyDaysLeft <= Tuning.NurseryDaysBeforeBirth;
+
+    /// <summary>Very young kits can only drink milk.</summary>
+    public bool CanEatPrey => !(Rank == Rank.Kit && AgeMoons < Tuning.FirstPreyAgeMoons);
+
+    /// <summary>The part of the name that stays for life, e.g. "Gray".</summary>
+    public string Prefix { get; }
+
+    /// <summary>The part of the name that changes with rank, e.g. "kit", "paw", "stripe", "star".</summary>
+    public string Suffix { get; private set; }
+
+    public string Name => Prefix + Suffix;
+    public Rank Rank { get; private set; }
+    public int AgeMoons { get; private set; }
 
     /// <summary>Hunting skill, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />.</summary>
-    public int Hunting { get; }
+    public int Hunting { get; private set; }
 
     /// <summary>How hard-working the cat is. Lazy cats hunt worse.</summary>
     public int Diligence { get; }
@@ -46,15 +93,44 @@ public class Cat {
     /// </summary>
     public int StarvationStacks { get; private set; }
 
-    public bool HasStarvedToDeath => StarvationStacks >= Tuning.StarvationStacksToDie;
+    /// <summary>Chance to die of starvation this tick, from 0 to 1.</summary>
+    public float StarvationDeathChance {
+        get {
+            if (StarvationStacks >= Tuning.StarvationStacksToDie)
+                return 1f;
 
-    public bool CanHunt => Rank is Rank.Apprentice or Rank.Warrior or Rank.Deputy or Rank.Leader;
+            var chance = Math.Max(0, StarvationStacks - Tuning.StarvationSafeStacks)
+                         * Tuning.StarvationDeathChancePerStack;
+            if (IsFrail)
+                chance *= Tuning.FrailStarvationMultiplier;
+            return Math.Min(1f, chance);
+        }
+    }
+
+    /// <summary>Kits and elders survive hunger and sickness worse.</summary>
+    public bool IsFrail => Rank is Rank.Kit or Rank.Elder;
+
+    public bool CanHunt =>
+        Rank is Rank.Apprentice or Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery;
+
+    /// <summary>In a famine, elders and queens in the nursery help with hunting too.</summary>
+    public bool CanHuntInFamine => CanHunt || Rank == Rank.Elder || (IsInNursery && Rank != Rank.Kit);
 
     /// <summary>
     ///     How much food the cat needs compared to an adult (1 = adult, 0 = still nursing).
-    ///     Read from <see cref="Tuning.FoodNeedByAge" />, interpolated between the points.
+    ///     Pregnant and nursing queens need more.
     /// </summary>
     public float FoodNeed {
+        get {
+            var need = FoodNeedForAge;
+            if (IsPregnant)
+                need += Tuning.PregnancyExtraFoodNeed;
+            return need + MilkLoad * Tuning.MilkFoodNeedPerKit;
+        }
+    }
+
+    /// <summary>Read from <see cref="Tuning.FoodNeedByAge" />, interpolated between the points.</summary>
+    private float FoodNeedForAge {
         get {
             var points = Tuning.FoodNeedByAge;
             if (AgeMoons <= points[0].AgeMoons)
@@ -80,6 +156,8 @@ public class Cat {
             var chance = Tuning.BaseCatchChance
                          + Hunting * Tuning.CatchChancePerHuntingPoint
                          + (Diligence - Tuning.AverageDiligence) * Tuning.CatchChancePerDiligencePoint;
+            if (Rank == Rank.Elder)
+                chance *= Tuning.ElderHuntingMultiplier;
             return Math.Clamp(chance * EnergyFactor, 0f, 1f);
         }
     }
@@ -119,6 +197,63 @@ public class Cat {
 
     public void Sleep(float energy) {
         Energy = Math.Min(MaxEnergy, Energy + energy);
+    }
+
+    public void AgeOneMoon() {
+        AgeMoons++;
+    }
+
+    public void ImproveHunting(int amount) {
+        Hunting = Math.Clamp(Hunting + amount, Tuning.SkillMin, Tuning.SkillMax);
+    }
+
+    /// <summary>
+    ///     Changes the cat's rank. Kits, apprentices and leaders get the matching name suffix,
+    ///     new warriors get <paramref name="warriorSuffix" />. Deputies and elders keep their name.
+    /// </summary>
+    public void ChangeRank(Rank rank, string warriorSuffix = null) {
+        Rank = rank;
+        Suffix = rank switch {
+            Rank.Kit => CatNames.KitSuffix,
+            Rank.Apprentice => CatNames.ApprenticeSuffix,
+            Rank.Warrior when warriorSuffix != null => warriorSuffix,
+            Rank.Leader => CatNames.LeaderSuffix,
+            _ => Suffix
+        };
+    }
+
+    /// <summary>Parents, children and siblings (including half-siblings).</summary>
+    public bool IsCloseKinOf(Cat other) {
+        var isParentOrChild = Mother == other || Father == other || other.Mother == this || other.Father == this;
+        var isSibling = (Mother != null && Mother == other.Mother) || (Father != null && Father == other.Father);
+        return isParentOrChild || isSibling;
+    }
+
+    public void BecomeMates(Cat other) {
+        Mate = other;
+        other.Mate = this;
+    }
+
+    public void LoseMate() {
+        Mate = null;
+    }
+
+    public void BecomePregnant(Cat father) {
+        PregnancyDaysLeft = Tuning.PregnancyDays;
+        FatherOfUnbornKits = father;
+    }
+
+    /// <summary>Counts down one day of pregnancy. Returns true when the kits are born.</summary>
+    public bool AdvancePregnancy() {
+        if (!IsPregnant)
+            return false;
+
+        PregnancyDaysLeft--;
+        if (PregnancyDaysLeft > 0)
+            return false;
+
+        PregnancyDaysLeft = null;
+        return true;
     }
 
     public override string ToString() {
