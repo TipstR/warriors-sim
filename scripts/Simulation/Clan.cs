@@ -18,6 +18,7 @@ public class Clan {
     /// <summary>Cats that have died, in the order they died.</summary>
     public IReadOnlyList<Cat> Dead => _dead;
     public FreshKillPile FreshKillPile { get; } = new();
+    public HerbStore HerbStore { get; } = new();
 
     /// <summary>The Clan's leader, or null if the Clan has none.</summary>
     public Cat Leader => _cats.FirstOrDefault(c => c.Rank == Rank.Leader);

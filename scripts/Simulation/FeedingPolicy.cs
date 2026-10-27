@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace WarriorsSim.Simulation;
@@ -57,35 +58,40 @@ public record FeedingPolicy(
 
     /// <summary>How much the cat needs protecting, from 0 to 1.</summary>
     private static float Vulnerability(Cat cat) {
-        if (cat.IsQueen)
+        if (cat.IsQueen || cat.IsSick)
             return 1f;
 
         return cat.Rank switch {
             Rank.Kit => 1f,
             Rank.Elder => 1f,
-            Rank.Apprentice => 0.5f,
+            Rank.Apprentice or Rank.MedicineCatApprentice => 0.5f,
             _ => 0f
         };
     }
 
-    /// <summary>How much the Clan needs this cat to survive, from 0 to 1. For now: hunting skill.</summary>
+    /// <summary>How much the Clan needs this cat to survive, from 0 to 1: hunting skill, for medicine cats healing skill.</summary>
     private static float Usefulness(Cat cat) {
+        if (cat.IsMedicineCat)
+            return (float)cat.Healing / Tuning.SkillMax;
         return cat.CanHunt ? (float)cat.Hunting / Tuning.SkillMax : 0f;
     }
 
-    /// <summary>The warrior code's eating order, from 1 (eats first) to 0 (eats last): kits, queens, elders, ...</summary>
+    /// <summary>The warrior code's eating order, from 1 (eats first) to 0 (eats last): kits, queens, elders, sick, ...</summary>
     private static float WarriorCodeRank(Cat cat) {
         if (cat.IsQueen)
             return 0.9f;
 
-        return cat.Rank switch {
+        var rank = cat.Rank switch {
             Rank.Kit => 1f,
             Rank.Elder => 0.8f,
-            // Sick cats will go here (0.7) once sickness exists.
             Rank.Leader => 0.6f,
+            // The code doesn't name medicine cats, they are respected like the leader's closest cats
+            Rank.MedicineCat => 0.5f,
             Rank.Deputy => 0.4f,
             Rank.Warrior => 0.2f,
             _ => 0f
         };
+        // Sick cats eat right after the elders
+        return cat.IsSick ? Math.Max(rank, 0.7f) : rank;
     }
 }

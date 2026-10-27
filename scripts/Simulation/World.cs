@@ -6,8 +6,9 @@ namespace WarriorsSim.Simulation;
 
 /// <summary>
 ///     Runs the simulation one tick at a time and reports what happens to the log.
+///     Split into several files by topic (partial class), e.g. World.Health.cs for sickness.
 /// </summary>
-public class World {
+public partial class World {
     private static int DaysPerSeason => Tuning.DaysPerMoon * Tuning.MoonsPerSeason;
     private readonly Action<LogLevel, string> _log;
     private readonly Random _random;
@@ -69,6 +70,7 @@ public class World {
 
         UpdateEnergy();
         UpdateStarvation();
+        UpdateHealth();
 
         if (TimeOfDay == TimeOfDay.Night) {
             AdvancePregnancies();
@@ -155,7 +157,9 @@ public class World {
             var huntingGift = RollGift(mother.HuntingGift, father?.HuntingGift);
             var mentoringGift = RollGift(mother.MentoringGift, father?.MentoringGift);
             var kit = new Cat(prefix + CatNames.KitSuffix, Rank.Kit, sex, 0, 0, diligence,
-                huntingGift, mentoringGift, mother, father);
+                huntingGift, mentoringGift, mother, father) {
+                HealingGift = RollHealingGift(mother.HealingGift, father?.HealingGift)
+            };
             Clan.AddCat(kit);
             kits.Add(kit);
         }
@@ -243,9 +247,10 @@ public class World {
     }
 
     /// <summary>
-    ///     From 1 (plenty of room) to 0 (the territory is full): how many cats the territory could feed in
-    ///     <see cref="Tuning.CrowdingSeason" /> compared to how many the Clan has. Births get rarer long before
-    ///     the limit is reached.
+    ///     From 1 (plenty of room) to <see cref="Tuning.MinCrowdingFactor" /> (the territory is full): how many cats the
+    ///     territory could feed in <see cref="Tuning.CrowdingSeason" /> compared to how many the Clan has. Births get
+    ///     rarer long before the limit is reached, but never stop: in a full Clan, hunger decides who survives.
+    ///     A brake that stops all births lets the Clan grow old together and collapse.
     /// </summary>
     private float CrowdingFactor() {
         var micePerAdultPerDay = Tuning.SatiationLossPerTick * Tuning.TicksPerDay / Tuning.MouseSatiation;
@@ -253,7 +258,7 @@ public class World {
         var catsTheTerritoryFeeds = prey / micePerAdultPerDay;
 
         var fullness = Clan.Cats.Count / catsTheTerritoryFeeds;
-        return Math.Max(0f, 1f - fullness * fullness);
+        return Math.Max(Tuning.MinCrowdingFactor, 1f - fullness * fullness);
     }
 
     /// <summary>
@@ -262,12 +267,15 @@ public class World {
     /// </summary>
     private void AgeOneMoon() {
         ReplaceLostMentors();
+        var medicineApprentice = ChooseMedicineApprentice();
 
         foreach (var cat in Clan.Cats.ToList()) {
             cat.AgeOneMoon();
 
             if (cat.Rank == Rank.Apprentice)
                 Train(cat);
+            else if (cat.Rank == Rank.MedicineCatApprentice)
+                TrainMedicineApprentice(cat);
 
             if (DiesOfOldAge(cat)) {
                 Clan.RecordDeath(cat);
@@ -277,7 +285,10 @@ public class World {
                 continue;
             }
 
-            if (cat.Rank == Rank.Kit && cat.AgeMoons >= Tuning.ApprenticeAgeMoons) {
+            if (cat == medicineApprentice) {
+                MakeMedicineApprentice(cat);
+            }
+            else if (cat.Rank == Rank.Kit && cat.AgeMoons >= Tuning.ApprenticeAgeMoons) {
                 var kitName = cat.Name;
                 cat.ChangeRank(Rank.Apprentice);
                 var mentor = FindMentor(cat);
@@ -293,6 +304,9 @@ public class World {
                 var mentorText = cat.Mentor != null ? $", trained by {cat.Mentor.Name}" : "";
                 Log($"{apprenticeName} has become a warrior: {cat.Name} (hunting {cat.Hunting}{mentorText}).",
                     LogLevel.Summary);
+            }
+            else if (cat.Rank == Rank.MedicineCatApprentice && cat.AgeMoons >= Tuning.MedicineCatAgeMoons) {
+                MakeMedicineCat(cat);
             }
             else if (cat.Rank is Rank.Warrior or Rank.Deputy && cat.AgeMoons >= Tuning.RetireAgeMoons) {
                 cat.ChangeRank(Rank.Elder);
@@ -547,6 +561,7 @@ public class World {
             var caught = Hunt(cat);
             total += caught;
             catches.Add($"{cat.Name} {caught}");
+            RollHuntingInjury(cat);
         }
 
         Clan.FreshKillPile.Add(total);
@@ -625,10 +640,12 @@ public class World {
         var starving = Clan.Cats.Count(c => c.IsStarving);
         var mostStacks = Clan.Cats.Select(c => c.StarvationStacks).DefaultIfEmpty().Max();
         var meanStacks = Clan.Cats.Select(c => (float)c.StarvationStacks).DefaultIfEmpty().Average();
+        var sick = Clan.Cats.Count(c => c.IsSick);
+        var confined = Clan.Cats.Count(c => c.IsConfined);
 
         Log($"End of day. Pile: {Clan.FreshKillPile.Mice}, average satiation: {averageSatiation:0}, "
             + $"hungry: {hungry}, starving: {starving}, average energy: {averageEnergy:0}, "
-            + $"starvation stacks: most {mostStacks}, mean {meanStacks:0.00}");
+            + $"starvation stacks: most {mostStacks}, mean {meanStacks:0.00}, sick: {sick} ({confined} confined)");
     }
 
     private void LogMoonSummary() {
@@ -648,7 +665,7 @@ public class World {
             + $"meals missed: {_mealsMissedThisMoon}, times a cat starved: {_timesStarvedThisMoon}, "
             + $"times a cat was exhausted: {_timesExhaustedThisMoon}, "
             + $"pile: {Clan.FreshKillPile.Mice}, average satiation: {averageSatiation:0}, "
-            + $"starving now: {starving}", LogLevel.Summary);
+            + $"starving now: {starving}, {HealthSummary()}", LogLevel.Summary);
 
         _miceCaughtThisMoon = 0;
         _mealsMissedThisMoon = 0;
@@ -661,6 +678,7 @@ public class World {
         _peakStarvationCatThisMoon = "";
         _starvationStackSumThisMoon = 0;
         _catTicksThisMoon = 0;
+        ResetHealthStatistics();
     }
 
     private void AdvanceTime() {

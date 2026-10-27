@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 
 namespace WarriorsSim.Simulation;
@@ -11,11 +12,11 @@ public static class StartingClans {
         var brindleface = new Cat("Brindleface", Rank.Warrior, Sex.SheCat, 40, 50, 60, 50, 60);
 
         // Gifts: 50 = average. Mentored: moons spent training apprentices before the game starts.
+        // Healing gifts are rare, so everyone without one set has the low average (Tuning.AverageHealingGift).
         //                  name           rank             sex          age  hunting  diligence  gift: hunting  mentoring
         clan.AddCat(new Cat("Bluestar",    Rank.Leader,     Sex.SheCat,  110, 70,      80,              70,      75) { MoonsMentored = 30 });
         clan.AddCat(new Cat("Redtail",     Rank.Deputy,     Sex.Tom,     60,  65,      75,              65,      65) { MoonsMentored = 12 });
-        // Spottedleaf will be medicine cat
-        clan.AddCat(new Cat("Spottedleaf", Rank.Warrior,    Sex.SheCat,  20,  45,      80,              45,      60));
+        clan.AddCat(new Cat("Spottedleaf", Rank.MedicineCat, Sex.SheCat, 20,  45,      80,              45,      60) { Healing = 60, HealingGift = 75 });
         // A great hunter, but a bad mentor (ask Ravenpaw)
         clan.AddCat(new Cat("Tigerclaw",   Rank.Warrior,    Sex.Tom,     50,  85,      90,              90,      15) { MoonsMentored = 8 });
         clan.AddCat(new Cat("Lionheart",   Rank.Warrior,    Sex.Tom,     70,  70,      70,              70,      85) { MoonsMentored = 30 });
@@ -36,7 +37,8 @@ public static class StartingClans {
         clan.AddCat(new Cat("Patchpelt",   Rank.Elder,      Sex.Tom,     135, 20,      35,              40,      55));
         clan.AddCat(new Cat("One-Eye",     Rank.Elder,      Sex.SheCat,  138, 15,      40,              35,      40));
         // Frostfur's litter
-        clan.AddCat(new Cat("Cinderkit",   Rank.Kit,        Sex.SheCat,  3,   0,       70,              40,      70, frostfur));
+        // A gift for healing, like in the books. Whether she becomes a medicine cat is up to the simulation.
+        clan.AddCat(new Cat("Cinderkit",   Rank.Kit,        Sex.SheCat,  3,   0,       70,              40,      70, frostfur) { HealingGift = 80 });
         clan.AddCat(new Cat("Brackenkit",  Rank.Kit,        Sex.Tom,     3,   0,       60,              55,      65, frostfur));
         clan.AddCat(new Cat("Brightkit",   Rank.Kit,        Sex.SheCat,  3,   0,       55,              50,      50, frostfur));
         clan.AddCat(new Cat("Thornkit",    Rank.Kit,        Sex.Tom,     3,   0,       65,              55,      50, frostfur));
@@ -50,6 +52,10 @@ public static class StartingClans {
         Find("Graypaw").SetMentor(Find("Lionheart"));
         Find("Dustpaw").SetMentor(Find("Redtail"));
         Find("Sandpaw").SetMentor(Find("Whitestorm"));
+
+        // Spottedleaf's herb store
+        foreach (var herb in Enum.GetValues<Herb>())
+            clan.HerbStore.Add(herb, Tuning.StartingHerbDoses);
 
         return clan;
     }

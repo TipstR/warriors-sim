@@ -1,10 +1,18 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace WarriorsSim.Simulation;
 
 public class Cat {
     private int _moonsMentored;
     private float _huntingProgress;
+    private int _healing;
+    private float _healingProgress;
+    private readonly List<Condition> _conditions = new();
+
+    /// <summary>Until which day the cat can't catch a sickness again, because it just had it.</summary>
+    private readonly Dictionary<ConditionType, int> _immuneUntilDay = new();
 
     public Cat(string name, Rank rank, Sex sex, int ageMoons, int hunting, int diligence,
         int huntingGift = Tuning.AverageGift, int mentoringGift = Tuning.AverageGift,
@@ -85,6 +93,24 @@ public class Cat {
     /// <summary>How gifted the cat was born for teaching. Some cats are just bad mentors, however long they mentor.</summary>
     public int MentoringGift { get; }
 
+    /// <summary>
+    ///     How gifted the cat was born for healing. Much rarer than the other gifts, see
+    ///     <see cref="Tuning.HealingGiftRarity" />. Can be set for cats that start the game.
+    /// </summary>
+    public int HealingGift { get; init; } = Tuning.AverageHealingGift;
+
+    /// <summary>
+    ///     Healing skill, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />. Medicine cats learn it
+    ///     from their mentor and by caring for the sick. Other cats learn a little when they are cared for.
+    ///     Can be set for cats that start the game.
+    /// </summary>
+    public int Healing {
+        get => _healing;
+        init => _healing = Math.Clamp(value, Tuning.SkillMin, Tuning.SkillMax);
+    }
+
+    public bool IsMedicineCat => Rank is Rank.MedicineCat or Rank.MedicineCatApprentice;
+
     /// <summary>The cat that trains this apprentice, or trained this warrior. Null if the cat never had one.</summary>
     public Cat Mentor { get; private set; }
 
@@ -114,9 +140,15 @@ public class Cat {
         Tuning.WorstMentorFactor + (Tuning.BestMentorFactor - Tuning.WorstMentorFactor) * MentoringQuality;
 
     /// <summary>How much faster (above 1) or slower (below 1) this cat learns to hunt, from its hunting gift.</summary>
-    public float HuntingLearningFactor =>
-        Tuning.LeastGiftedLearningFactor
-        + (Tuning.MostGiftedLearningFactor - Tuning.LeastGiftedLearningFactor) * HuntingGift / Tuning.SkillMax;
+    public float HuntingLearningFactor => LearningFactor(HuntingGift);
+
+    /// <summary>How much faster (above 1) or slower (below 1) this cat learns to heal, from its healing gift.</summary>
+    public float HealingLearningFactor => LearningFactor(HealingGift);
+
+    private static float LearningFactor(int gift) {
+        return Tuning.LeastGiftedLearningFactor
+               + (Tuning.MostGiftedLearningFactor - Tuning.LeastGiftedLearningFactor) * gift / Tuning.SkillMax;
+    }
 
     /// <summary>Warriors, the deputy and the leader can mentor, but not while they are in the nursery.</summary>
     public bool CanMentor => Rank is Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery;
@@ -158,14 +190,71 @@ public class Cat {
         }
     }
 
+    /// <summary>
+    ///     Starving for longer than one hungry night (see <see cref="Tuning.FamineMinStacks" />).
+    ///     Such a cat fights sickness worse.
+    /// </summary>
+    public bool IsWeakFromHunger => StarvationStacks >= Tuning.FamineMinStacks;
+
     /// <summary>Kits and elders survive hunger and sickness worse.</summary>
     public bool IsFrail => Rank is Rank.Kit or Rank.Elder;
 
     public bool CanHunt =>
-        Rank is Rank.Apprentice or Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery;
+        Rank is Rank.Apprentice or Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery && !IsResting;
 
     /// <summary>In a famine, elders and queens in the nursery help with hunting too.</summary>
-    public bool CanHuntInFamine => CanHunt || Rank == Rank.Elder || (IsInNursery && Rank != Rank.Kit);
+    public bool CanHuntInFamine =>
+        CanHunt || (Rank == Rank.Elder || (IsInNursery && Rank != Rank.Kit)) && !IsResting;
+
+    /// <summary>Too sick to hunt, or resting in the medicine den.</summary>
+    private bool IsResting => IsConfined || InMedicineDen;
+
+    /// <summary>
+    ///     Whether the cat is a patient in the medicine den, chosen by the medicine cat. Set by the world every tick.
+    ///     Patients rest, recover faster and are away from the crowded dens.
+    /// </summary>
+    public bool InMedicineDen { get; set; }
+
+    /// <summary>Where the cat sleeps. Queens sleep in the nursery with the kits, patients in the medicine den.</summary>
+    public Den Den {
+        get {
+            if (InMedicineDen)
+                return Den.Medicine;
+            if (Rank == Rank.Kit || IsInNursery)
+                return Den.Nursery;
+
+            return Rank switch {
+                Rank.Apprentice => Den.Apprentices,
+                Rank.Elder => Den.Elders,
+                Rank.Leader => Den.Leader,
+                Rank.MedicineCat or Rank.MedicineCatApprentice => Den.Medicine,
+                _ => Den.Warriors
+            };
+        }
+    }
+
+    /// <summary>The cat's sicknesses and injuries right now.</summary>
+    public IReadOnlyList<Condition> Conditions => _conditions;
+
+    /// <summary>Sick or injured. The warrior code treats both the same.</summary>
+    public bool IsSick => _conditions.Count > 0;
+
+    /// <summary>All severities together, at most <see cref="Condition.Max" />.</summary>
+    public float TotalSeverity => Math.Min(Condition.Max, _conditions.Sum(c => c.Severity));
+
+    /// <summary>Too sick to leave its nest, see <see cref="Tuning.ConfinedSeverity" />. A confined cat doesn't hunt.</summary>
+    public bool IsConfined => TotalSeverity >= Tuning.ConfinedSeverity;
+
+    /// <summary>How much sickness lets the cat still perform, from 1 (healthy) to 0 (severity 100).</summary>
+    public float HealthFactor => 1f - TotalSeverity / Condition.Max;
+
+    /// <summary>Whether the cat can spread a sickness right now.</summary>
+    public bool IsContagious => _conditions.Any(c => c.IsContagious);
+
+    /// <summary>Whether the cat can spread this sickness right now.</summary>
+    public bool Spreads(ConditionType type) {
+        return _conditions.Any(c => c.Type == type && c.IsContagious);
+    }
 
     /// <summary>
     ///     How much food the cat needs compared to an adult (1 = adult, 0 = still nursing).
@@ -209,7 +298,7 @@ public class Cat {
                          + (Diligence - Tuning.AverageDiligence) * Tuning.CatchChancePerDiligencePoint;
             if (Rank == Rank.Elder)
                 chance *= Tuning.ElderHuntingMultiplier;
-            return Math.Clamp(chance * EnergyFactor, 0f, 1f);
+            return Math.Clamp(chance * EnergyFactor * HealthFactor, 0f, 1f);
         }
     }
 
@@ -265,6 +354,41 @@ public class Cat {
         Hunting = Math.Clamp(Hunting + fullPoints, Tuning.SkillMin, Tuning.SkillMax);
     }
 
+    public bool HasCondition(ConditionType type) {
+        return _conditions.Any(c => c.Type == type);
+    }
+
+    /// <summary>Whether the cat can catch this sickness on <paramref name="day" />: not while it has it or just had it.</summary>
+    public bool CanCatch(ConditionType type, int day) {
+        return !HasCondition(type) && (!_immuneUntilDay.TryGetValue(type, out var until) || day > until);
+    }
+
+    public void AddCondition(Condition condition) {
+        _conditions.Add(condition);
+    }
+
+    /// <summary>Removes the condition. A cat that got over a sickness can't catch it again until <paramref name="immuneUntilDay" />.</summary>
+    public void RemoveCondition(Condition condition, int immuneUntilDay) {
+        _conditions.Remove(condition);
+        _immuneUntilDay[condition.Type] = immuneUntilDay;
+    }
+
+    /// <summary>Replaces a condition with a worse one, e.g. whitecough with greencough. No immunity for the old one.</summary>
+    public void ReplaceCondition(Condition old, Condition worse) {
+        _conditions[_conditions.IndexOf(old)] = worse;
+    }
+
+    /// <summary>Like <see cref="ImproveHunting" />: parts of a point are kept. Never above <paramref name="cap" />.</summary>
+    public void ImproveHealing(float amount, int cap = Tuning.SkillMax) {
+        if (_healing >= cap)
+            return;
+
+        _healingProgress += amount;
+        var fullPoints = (int)_healingProgress;
+        _healingProgress -= fullPoints;
+        _healing = Math.Clamp(_healing + fullPoints, Tuning.SkillMin, cap);
+    }
+
     public void SetMentor(Cat mentor) {
         Mentor = mentor;
     }
@@ -276,14 +400,14 @@ public class Cat {
 
     /// <summary>
     ///     Changes the cat's rank. Kits, apprentices and leaders get the matching name suffix,
-    ///     new warriors get <paramref name="warriorSuffix" />. Deputies and elders keep their name.
+    ///     new warriors and medicine cats get <paramref name="warriorSuffix" />. Deputies and elders keep their name.
     /// </summary>
     public void ChangeRank(Rank rank, string warriorSuffix = null) {
         Rank = rank;
         Suffix = rank switch {
             Rank.Kit => CatNames.KitSuffix,
-            Rank.Apprentice => CatNames.ApprenticeSuffix,
-            Rank.Warrior when warriorSuffix != null => warriorSuffix,
+            Rank.Apprentice or Rank.MedicineCatApprentice => CatNames.ApprenticeSuffix,
+            Rank.Warrior or Rank.MedicineCat when warriorSuffix != null => warriorSuffix,
             Rank.Leader => CatNames.LeaderSuffix,
             _ => Suffix
         };
