@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace WarriorsSim.Simulation;
 
 /// <summary>
@@ -31,6 +33,14 @@ public record FeedingPolicy(
 
     /// <summary>Follows the warrior code to the letter, no matter who starves, even in a famine.</summary>
     public static readonly FeedingPolicy ByTheCode = new(0f, 0f, 0f, 0f, 1f, 0f);
+
+    /// <summary>All ready-made leader styles by name, e.g. for a dropdown in a settings screen.</summary>
+    public static readonly IReadOnlyDictionary<string, FeedingPolicy> Presets = new Dictionary<string, FeedingPolicy> {
+        ["Balanced"] = Balanced,
+        ["Compassionate"] = Compassionate,
+        ["Ruthless"] = Ruthless,
+        ["By the code"] = ByTheCode
+    };
 
     /// <param name="famine">Whether the Clan is in a famine right now, see <see cref="Clan.IsInFamine" />.</param>
     public float Score(Cat cat, bool famine) {

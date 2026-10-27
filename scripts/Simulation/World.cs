@@ -8,7 +8,7 @@ namespace WarriorsSim.Simulation;
 ///     Runs the simulation one tick at a time and reports what happens to the log.
 /// </summary>
 public class World {
-    private const int DaysPerSeason = Tuning.DaysPerMoon * Tuning.MoonsPerSeason;
+    private static int DaysPerSeason => Tuning.DaysPerMoon * Tuning.MoonsPerSeason;
     private readonly Action<LogLevel, string> _log;
     private readonly Random _random;
     private List<Cat> _lastHunters = new();
