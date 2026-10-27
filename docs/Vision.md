@@ -258,8 +258,9 @@ Still to decide **[Open]**:
 - This is essentially the **abstract simulation level**. **[Proposed]**
 - Details and rules: see `docs/Milestone1.md`.
 - **Status: done and extended.** ThunderClan sustains itself over decades:
-  cats are born, grow up, find mates, have kits, retire and die. A dashboard
-  in Godot shows the simulation live. See section 9.
+  cats are born, grow up, find mates, have kits, retire and die. A
+  simulation UI in Godot shows it live and lets you change cats and tuning
+  values. See section 9.
 
 ### Milestone 2 – First Territory
 
@@ -299,9 +300,10 @@ Still to decide **[Open]**:
 - Catch chance from skill, diligence, energy (S-curve), season and how much
   prey the territory has left today
 - Fresh-kill pile with the feeding policy (see 6.4)
-- Starvation: stacks lower max energy, death becomes a growing risk from 8
+- Starvation: stacks lower max energy, death becomes a growing risk above 8
   stacks (twice as high for kits and elders), certain at 20
-- Famine: hunters are fed first, elders and queens help hunting
+- Famine: starts when several cats are starving and only ends after three
+  calmer days. Hunters are fed first, elders and queens help hunting
 
 **Life cycle**
 
@@ -314,10 +316,19 @@ Still to decide **[Open]**:
 
 **Tools**
 
-- Dashboard in Godot (`scenes/dashboard.tscn`): time and speed controls,
-  Clan overview, cat list with bars, log
+- Simulation UI in Godot (`scenes/Simulation_UI.tscn`), the main scene,
+  with three tabs:
+  - **Clan:** list of all cats, and a form to add cats before or during a
+    run
+  - **Tuning:** every balancing value, editable, changed values highlighted,
+    reset to defaults
+  - **Simulation:** start/restart, play/pause, speeds, Clan overview and the
+    log (summary only or with details)
+- An older dashboard built in code (`scenes/dashboard.tscn`) with bars for
+  every cat
 - Full log in `logs/simulation.log`
-- All balancing values in `scripts/Simulation/Tuning.cs`
+- All balancing values in `scripts/Simulation/Tuning.cs`, the rules in
+  `docs/Milestone1.md`
 
 ### Lessons from balancing
 
@@ -326,6 +337,8 @@ Still to decide **[Open]**:
   queens helping).
 - Without a prey limit the Clan grows forever, without births it dies out,
   and a birth brake that is too strong lets the Clan age until it collapses.
+- Feeding everyone evenly makes everyone die at the same moment. Starvation
+  death is a growing risk instead of a fixed limit for that reason.
 - Right now cats only die of hunger and old age. Predators, sickness and
   Clan battles will take over part of this. Births, crowding and old age
   will need to be retuned then.
