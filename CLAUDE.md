@@ -5,6 +5,8 @@ simulation of a Clan that runs on its own and creates stories.
 
 Read `docs/Vision.md` for the vision and the current state, and
 `docs/Milestone1.md` for the rules of the first simulation.
+**`docs/Handover.md` has the latest state and a TODO list** (sickness and
+medicine cats are newer than the other docs).
 
 ## The user
 
@@ -32,7 +34,10 @@ Read `docs/Vision.md` for the vision and the current state, and
 ## Project structure
 
 - `scripts/Simulation/` – the simulation, plain C# without Godot code.
-  - `World.cs` runs everything tick by tick (4 ticks per day).
+  - `World.cs` runs everything tick by tick (4 ticks per day). It is a
+    partial class split by topic: `World.Health.cs` (sickness, injuries),
+    `World.Medicine.cs` (medicine cats, care, medicine den, herbs).
+  - `Condition.cs` (a sickness or injury), `Den.cs`, `Herb.cs` (herb store).
   - `Tuning.cs` holds all balancing values as static fields with
     `[TuningGroup]`. `TuningSettings.cs` lists and resets them.
   - `Cat.cs`, `Clan.cs`, `FeedingPolicy.cs` (leader styles),
@@ -57,10 +62,12 @@ Read `docs/Vision.md` for the vision and the current state, and
 - **Code style** is set in `.editorconfig`: braces on the same line,
   4 spaces, `var` where Rider uses it. Match the surrounding code.
 - **Build:** `dotnet build` in the project folder.
-- **Balance changes must be tested with several random seeds and long runs**
-  (e.g. 10 seeds, 30 years), not with a single run. A small console project
-  outside the repo that compiles `scripts/Simulation/*.cs` works well for this,
-  because the simulation has no Godot dependency.
+- **Balance changes must be tested with many random seeds and long runs**
+  (100 seeds × 30 years, about 3 minutes; 10 seeds are too noisy), not with a
+  single run. A small console project outside the repo that compiles
+  `scripts/Simulation/*.cs` works well for this, because the simulation has no
+  Godot dependency. Run it in the background. Ask before many long runs when
+  the user is on battery.
 - Godot can be started headless (`--headless --path . -s test.gd`) to check
   scenes, or with a window to save a screenshot of the viewport.
 - Commit and push only when the user asks. Split commits by feature.
@@ -74,5 +81,16 @@ Read `docs/Vision.md` for the vision and the current state, and
   a birth brake that is too strong lets the Clan age until it collapses.
 - Feeding everyone evenly makes everyone die at the same moment. Starvation
   death is a growing risk instead of a fixed limit for that reason.
-- Right now cats only die of hunger and old age. Predators, sickness and Clan
-  battles will need retuning of births, crowding and old age later.
+- The food balance is very sensitive to the *average* hunting skill: 2–3
+  points less made several times as many Clans die out. The spread of skill
+  barely matters. Every cat that doesn't hunt (medicine cats, sick cats)
+  counts.
+- The birth brake must never stop births completely
+  (`Tuning.MinCrowdingFactor`). When medicine cats stopped sickness from
+  killing, half the Clans grew old together and died out. A young Clan comes
+  from births continuing and hunger thinning, not from fewer deaths.
+- Contagion is about how many cats one sick cat infects (days contagious ×
+  chance × cats in its den × season). Above 1 the whole Clan gets sick, so
+  small values matter a lot.
+- Penalties that feed each other (hunger makes sickness deadlier, sickness
+  makes hunters weaker) spiral quickly. Keep each one mild.
