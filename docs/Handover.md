@@ -130,5 +130,33 @@ long runs when the user is on battery.
   Without a medicine cat, the best of them gives basic care.
 - Herb store with seasons. Medicine den with limited nests, sickest first.
 - Population: **soft brake, hunger decides**.
-- Commit only once balanced. The user asked for this commit at the end of the
-  session anyway, with medicine still too strong (TODO 3).
+- Balance doesn't have to be perfect before committing. It can't be balanced
+  to perfection yet, so commit working steps.
+- **Medicine cats rank next to the leader** in the warrior code's eating order
+  (spiritual leaders, save the most lives). Their apprentice comes right after
+  them.
+- **Healers care for themselves.** A medicine cat too sick to get up instructs
+  another cat, who cares with a bonus from the instructions
+  (`Tuning.InstructedHealingShare`).
+- **Two healers whenever possible** (`Tuning.TargetHealers`), but never more
+  than one apprentice. The apprentice is chosen at a kit's apprentice
+  ceremony as soon as the Clan has fewer than two healers, so Cinderkit
+  becomes Spottedleaf's apprentice.
+- **Desperation:** after `Tuning.MoonsUntilDesperateForHealer` moons without a
+  medicine cat, the Clan takes its most promising kit at the next apprentice
+  ceremony, however small the gift. Not a warrior.
+
+## Update from the main PC (2026-10-27)
+
+- Done: the push worked, medicine order, self-care and instructed helpers
+  (this also fixed a bug where a sick healer dropped out of the patient
+  queue), two healers, desperation.
+- 100 seeds × 30 years after these changes: 12 died out, ~7.3 starved/year,
+  ~1.7 sickness deaths/run. Two healers in 86% of all moons, one in 13%.
+- TODO 6 solved: in famines, most leaders feed the hunters first, and an
+  apprentice's skill is still low. Now the feeding policy judges apprentices
+  (warrior and medicine cat) by their gift or their skill, whichever is
+  higher. Medicine cat apprentices starve 7 times in 100 runs instead of ~280.
+- 100 seeds × 30 years after all changes: 9 died out, ~7.7 starved/year,
+  ~2.1 sickness deaths/run.
+- `SeekMedicineApprenticeAgeMoons` was replaced by `TargetHealers`.
