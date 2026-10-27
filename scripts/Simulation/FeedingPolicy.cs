@@ -69,11 +69,18 @@ public record FeedingPolicy(
         };
     }
 
-    /// <summary>How much the Clan needs this cat to survive, from 0 to 1: hunting skill, for medicine cats healing skill.</summary>
+    /// <summary>
+    ///     How much the Clan needs this cat to survive, from 0 to 1: hunting skill, for medicine cats healing skill.
+    ///     Apprentices are judged by what they promise to become: their gift, or their skill if it's already higher.
+    /// </summary>
     private static float Usefulness(Cat cat) {
-        if (cat.IsMedicineCat)
-            return (float)cat.Healing / Tuning.SkillMax;
-        return cat.CanHunt ? (float)cat.Hunting / Tuning.SkillMax : 0f;
+        var value = cat.Rank switch {
+            Rank.MedicineCat => cat.Healing,
+            Rank.MedicineCatApprentice => Math.Max(cat.Healing, cat.HealingGift),
+            Rank.Apprentice => Math.Max(cat.Hunting, cat.HuntingGift),
+            _ => cat.CanHunt ? cat.Hunting : 0
+        };
+        return (float)value / Tuning.SkillMax;
     }
 
     /// <summary>The warrior code's eating order, from 1 (eats first) to 0 (eats last): kits, queens, elders, sick, ...</summary>
@@ -84,9 +91,11 @@ public record FeedingPolicy(
         var rank = cat.Rank switch {
             Rank.Kit => 1f,
             Rank.Elder => 0.8f,
+            // Medicine cats stand next to the leader: they are the Clan's spiritual leaders and save the most lives.
+            // Their apprentice comes right after them.
             Rank.Leader => 0.6f,
-            // The code doesn't name medicine cats, they are respected like the leader's closest cats
-            Rank.MedicineCat => 0.5f,
+            Rank.MedicineCat => 0.6f,
+            Rank.MedicineCatApprentice => 0.5f,
             Rank.Deputy => 0.4f,
             Rank.Warrior => 0.2f,
             _ => 0f

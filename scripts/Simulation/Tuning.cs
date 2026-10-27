@@ -100,14 +100,26 @@ public static class Tuning {
     /// </summary>
     [TuningGroup("Medicine")] public static float MedicineApprenticeHealingGainPerMoon = 6f;
 
-    /// <summary>From this age on, a medicine cat looks for an apprentice to take over one day.</summary>
-    [TuningGroup("Medicine")] public static int SeekMedicineApprenticeAgeMoons = 60;
+    /// <summary>
+    ///     How many healers (medicine cats and their apprentice) the Clan wants. While it has fewer, it looks for an
+    ///     apprentice. There is never more than one apprentice at a time.
+    /// </summary>
+    [TuningGroup("Medicine")] public static int TargetHealers = 2;
+
+    /// <summary>A kit needs at least this healing gift to become a medicine cat apprentice.</summary>
+    [TuningGroup("Medicine")] public static int MedicineApprenticeMinGift = 30;
 
     /// <summary>
-    ///     A kit needs at least this healing gift to become a medicine cat apprentice. If the Clan has no medicine cat
-    ///     at all, the most gifted kit is taken anyway.
+    ///     After this many moons without a full medicine cat, the Clan gets desperate: at the next apprentice ceremony
+    ///     it takes its most promising kit, however small its healing gift.
     /// </summary>
-    [TuningGroup("Medicine")] public static int MedicineApprenticeMinGift = 30;
+    [TuningGroup("Medicine")] public static int MoonsUntilDesperateForHealer = 6;
+
+    /// <summary>
+    ///     A medicine cat too sick to get up can instruct another cat to care for the patients. That cat cares with
+    ///     at least this share of the medicine cat's healing skill, or its own skill if that is higher.
+    /// </summary>
+    [TuningGroup("Medicine")] public static float InstructedHealingShare = 0.6f;
 
     /// <summary>How many nests the medicine den has. When it's full, the sickest cats get the nests.</summary>
     [TuningGroup("Medicine")] public static int MedicineDenNests = 5;
