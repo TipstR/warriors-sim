@@ -25,6 +25,11 @@ public class Clan {
     /// <summary>The Clan's deputy, or null if the Clan has none.</summary>
     public Cat Deputy => _cats.FirstOrDefault(c => c.Rank == Rank.Deputy);
 
+    /// <summary>The apprentice this cat is mentoring right now, or null.</summary>
+    public Cat ApprenticeOf(Cat mentor) {
+        return _cats.FirstOrDefault(c => c.Rank == Rank.Apprentice && c.Mentor == mentor);
+    }
+
     public void AddCat(Cat cat) {
         _cats.Add(cat);
     }

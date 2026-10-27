@@ -288,6 +288,8 @@ Still to decide **[Open]**:
 
 - Name (prefix + suffix that changes with rank: Graykit, Graypaw,
   Graycloud, Graystar), sex, age, rank, hunting skill, diligence
+- Gifts they are born with (hunting, mentoring), half inherited from the
+  parents, half luck
 - Mother, father and mate
 - Satiation, energy (sleep), starvation stacks
 - Food need by age (based on real kittens): nursing kits need no prey,
@@ -308,7 +310,11 @@ Still to decide **[Open]**:
 **Life cycle**
 
 - Aging every moon, ceremonies (apprentice at 6 moons, warrior at 12),
-  apprentices improve while training, retirement at 120 moons
+  retirement at 120 moons
+- Mentors: the leader gives every apprentice a mentor. How fast it learns
+  depends on its hunting gift and on the mentor's mentoring gift and
+  experience. Some cats are just bad mentors. The gap between the weakest
+  and the best new warriors is large (below 20 to 90+ hunting)
 - Death of old age from 96 moons, succession of leader and deputy
 - Mates (placeholder rule), pregnancy (63 days), litters of 1–6 kits
 - Nursery: queens share their milk with all kits, orphans included
@@ -339,14 +345,19 @@ Still to decide **[Open]**:
   and a birth brake that is too strong lets the Clan age until it collapses.
 - Feeding everyone evenly makes everyone die at the same moment. Starvation
   death is a growing risk instead of a fixed limit for that reason.
+- The food balance is very sensitive to the average hunting skill. When
+  mentors were added, new warriors ended up only 2–3 points worse on
+  average, and about four times as many Clans died out. The spread of skill
+  (gifts) barely mattered, the average did.
 - Right now cats only die of hunger and old age. Predators, sickness and
   Clan battles will take over part of this. Births, crowding and old age
   will need to be retuned then.
 
 ### Possible next steps **[Proposed]**
 
-1. **Mentors:** every apprentice has a mentor, and a good mentor trains
-   faster. First real relationship, and the basis for "I trained him".
+1. **Mentors, part 2:** remember every apprentice a cat has trained (not only
+   the last mentor), warriors keep learning after their apprenticeship, and
+   the warrior code's rule that a deputy must have had an apprentice.
 2. **Danger:** injuries while hunting, predators (foxes, badgers), sickness.
    Gives the Clan other ways to lose cats than hunger and old age.
 3. **Medicine cats:** heal injuries and sickness, a separate career.

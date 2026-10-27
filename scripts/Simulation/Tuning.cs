@@ -12,6 +12,9 @@ public static class Tuning {
     public const int SkillMin = 0;
     public const int SkillMax = 100;
 
+    /// <summary>The middle of the gift scale. Cats created without a gift (e.g. from the UI) get this.</summary>
+    public const int AverageGift = 50;
+
     // Time
     [TuningGroup("Time")] public static int DaysPerMoon = 30;
     [TuningGroup("Time")] public static int MoonsPerSeason = 3;
@@ -27,8 +30,13 @@ public static class Tuning {
     /// <summary>Warriors and deputies retire to the elders' den at this age. Leaders never retire.</summary>
     [TuningGroup("Aging")] public static int RetireAgeMoons = 120;
 
-    /// <summary>How much an apprentice's hunting skill improves every moon of training.</summary>
-    [TuningGroup("Aging")] public static int ApprenticeHuntingGainPerMoon = 8;
+    /// <summary>
+    ///     How much an apprentice's hunting skill improves every moon of training, before its gift and its mentor are
+    ///     applied (see the Gifts and Mentors groups). Most mentors are not fully experienced, so the average
+    ///     apprentice learns a bit less than this. With 8.7, the average new warrior has about 50 hunting.
+    ///     Careful: the Clan's survival is very sensitive to that average.
+    /// </summary>
+    [TuningGroup("Aging")] public static float ApprenticeHuntingGainPerMoon = 8.7f;
 
     /// <summary>From this age on, a cat can die of old age (96 moons = 8 years).</summary>
     [TuningGroup("Aging")] public static int OldAgeStartMoons = 96;
@@ -38,6 +46,35 @@ public static class Tuning {
 
     /// <summary>The chance to die of old age doubles every this many moons.</summary>
     [TuningGroup("Aging")] public static int OldAgeDeathChanceDoublingMoons = 18;
+
+    // Gifts
+    /// <summary>
+    ///     How much of a kit's gift comes from its parents (the average of both). The rest is luck.
+    ///     0 = only luck, 1 = kits are exactly as gifted as their parents.
+    /// </summary>
+    [TuningGroup("Gifts")] public static float GiftInheritance = 0.5f;
+
+    /// <summary>How fast the least gifted cat (gift 0) learns to hunt. 1 = average.</summary>
+    [TuningGroup("Gifts")] public static float LeastGiftedLearningFactor = 0.3f;
+
+    /// <summary>How fast the most gifted cat (gift 100) learns to hunt. 1 = average.</summary>
+    [TuningGroup("Gifts")] public static float MostGiftedLearningFactor = 1.7f;
+
+    // Mentors
+    /// <summary>How fast an apprentice learns with the worst possible mentor. 1 = average.</summary>
+    [TuningGroup("Mentors")] public static float WorstMentorFactor = 0.5f;
+
+    /// <summary>How fast an apprentice learns with the best possible mentor. 1 = average.</summary>
+    [TuningGroup("Mentors")] public static float BestMentorFactor = 1.5f;
+
+    /// <summary>How fast an apprentice learns when no warrior is free to mentor it.</summary>
+    [TuningGroup("Mentors")] public static float NoMentorFactor = 0.3f;
+
+    /// <summary>A mentor who has never mentored before only teaches with this share of its mentoring gift.</summary>
+    [TuningGroup("Mentors")] public static float InexperiencedMentorShare = 0.6f;
+
+    /// <summary>After this many moons of mentoring, a mentor teaches with its full gift (24 = about four apprentices).</summary>
+    [TuningGroup("Mentors")] public static int MoonsToExperiencedMentor = 24;
 
     // Mates, queens and kits
     /// <summary>Chance per moon that a single she-cat warrior finds a mate (placeholder until relationships exist).</summary>

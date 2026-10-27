@@ -3,7 +3,11 @@ using System;
 namespace WarriorsSim.Simulation;
 
 public class Cat {
+    private int _moonsMentored;
+    private float _huntingProgress;
+
     public Cat(string name, Rank rank, Sex sex, int ageMoons, int hunting, int diligence,
+        int huntingGift = Tuning.AverageGift, int mentoringGift = Tuning.AverageGift,
         Cat mother = null, Cat father = null) {
         (Prefix, Suffix) = CatNames.Split(name);
         Rank = rank;
@@ -11,6 +15,8 @@ public class Cat {
         AgeMoons = ageMoons;
         Hunting = Math.Clamp(hunting, Tuning.SkillMin, Tuning.SkillMax);
         Diligence = Math.Clamp(diligence, Tuning.SkillMin, Tuning.SkillMax);
+        HuntingGift = Math.Clamp(huntingGift, Tuning.SkillMin, Tuning.SkillMax);
+        MentoringGift = Math.Clamp(mentoringGift, Tuning.SkillMin, Tuning.SkillMax);
         Mother = mother;
         Father = father;
         Satiation = Tuning.SatiationMax;
@@ -69,6 +75,51 @@ public class Cat {
 
     /// <summary>How hard-working the cat is. Lazy cats hunt worse.</summary>
     public int Diligence { get; }
+
+    /// <summary>
+    ///     How gifted the cat was born for hunting, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />
+    ///     (<see cref="Tuning.AverageGift" /> = average). Gifted apprentices learn faster.
+    /// </summary>
+    public int HuntingGift { get; }
+
+    /// <summary>How gifted the cat was born for teaching. Some cats are just bad mentors, however long they mentor.</summary>
+    public int MentoringGift { get; }
+
+    /// <summary>The cat that trains this apprentice, or trained this warrior. Null if the cat never had one.</summary>
+    public Cat Mentor { get; private set; }
+
+    /// <summary>How many moons the cat has spent training apprentices. Can be set for cats that start the game.</summary>
+    public int MoonsMentored {
+        get => _moonsMentored;
+        init => _moonsMentored = value;
+    }
+
+    /// <summary>From 0 (never mentored) to 1 (fully experienced, see <see cref="Tuning.MoonsToExperiencedMentor" />).</summary>
+    public float MentoringExperience => Math.Min(1f, (float)MoonsMentored / Tuning.MoonsToExperiencedMentor);
+
+    /// <summary>
+    ///     How well the cat teaches, from 0 (worst) to 1 (best). It's the cat's mentoring gift, but an inexperienced
+    ///     mentor only reaches <see cref="Tuning.InexperiencedMentorShare" /> of it.
+    /// </summary>
+    public float MentoringQuality {
+        get {
+            var share = Tuning.InexperiencedMentorShare
+                        + (1f - Tuning.InexperiencedMentorShare) * MentoringExperience;
+            return (float)MentoringGift / Tuning.SkillMax * share;
+        }
+    }
+
+    /// <summary>How much faster (above 1) or slower (below 1) this cat's apprentice learns, from its mentoring quality.</summary>
+    public float MentorFactor =>
+        Tuning.WorstMentorFactor + (Tuning.BestMentorFactor - Tuning.WorstMentorFactor) * MentoringQuality;
+
+    /// <summary>How much faster (above 1) or slower (below 1) this cat learns to hunt, from its hunting gift.</summary>
+    public float HuntingLearningFactor =>
+        Tuning.LeastGiftedLearningFactor
+        + (Tuning.MostGiftedLearningFactor - Tuning.LeastGiftedLearningFactor) * HuntingGift / Tuning.SkillMax;
+
+    /// <summary>Warriors, the deputy and the leader can mentor, but not while they are in the nursery.</summary>
+    public bool CanMentor => Rank is Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery;
 
     /// <summary>How full the cat is. 0 = starving, <see cref="Tuning.SatiationMax" /> = full.</summary>
     public float Satiation { get; private set; }
@@ -203,8 +254,24 @@ public class Cat {
         AgeMoons++;
     }
 
-    public void ImproveHunting(int amount) {
-        Hunting = Math.Clamp(Hunting + amount, Tuning.SkillMin, Tuning.SkillMax);
+    /// <summary>
+    ///     The skill is a whole number, so parts of a point are kept until they add up to a full point.
+    ///     Otherwise a gain of 5.4 every moon would always be rounded down to 5.
+    /// </summary>
+    public void ImproveHunting(float amount) {
+        _huntingProgress += amount;
+        var fullPoints = (int)_huntingProgress;
+        _huntingProgress -= fullPoints;
+        Hunting = Math.Clamp(Hunting + fullPoints, Tuning.SkillMin, Tuning.SkillMax);
+    }
+
+    public void SetMentor(Cat mentor) {
+        Mentor = mentor;
+    }
+
+    /// <summary>The cat has trained an apprentice for one more moon and gains experience as a mentor.</summary>
+    public void MentorOneMoon() {
+        _moonsMentored++;
     }
 
     /// <summary>

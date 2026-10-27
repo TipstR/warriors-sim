@@ -30,6 +30,10 @@ Each cat has:
 | Age                | in moons                                             |
 | Hunting            | skill, 0–100                                         |
 | Diligence          | personality trait, 0–100 (lazy cats hunt worse)      |
+| Hunting gift       | born with it, 0–100, 50 = average                    |
+| Mentoring gift     | born with it, 0–100, 50 = average                    |
+| Mentor             | the cat that trains or trained it, or none           |
+| Moons mentored     | how long it has trained apprentices                  |
 | Satiation          | 0–100 (100 = full, 0 = starving)                     |
 | Energy             | 0–100 (100 = rested, 0 = exhausted)                  |
 | Starvation stacks  | how long the cat has gone without food while starving |
@@ -204,8 +208,8 @@ attempt is harder, and there is less prey in total.
 ### Aging and ranks
 
 - Every cat gets a moon older at the end of each moon.
-- **Apprentice** at **6 moons**, **warrior** at **12 moons**.
-- Apprentices improve their hunting skill by **8 per moon** of training.
+- **Apprentice** at **6 moons**, **warrior** at **12 moons**. Apprentices
+  learn to hunt from their mentor (see Gifts and mentors).
 - Warriors and deputies **retire** to the elders' den at **120 moons**.
   Leaders never retire.
 - **Old age:** from **96 moons** on, a cat can die of old age. The chance
@@ -214,11 +218,50 @@ attempt is harder, and there is less prey in total.
   deputy is chosen right away: for now the best hunter among the warriors
   (the older one if two are equal).
 
+### Gifts and mentors
+
+Skill comes from two things: what a cat was born with (its **gift**) and
+who trained it (its **mentor**). Only hunting is a skill so far, but every
+new skill will get its own gift.
+
+- **Gifts:** every kit is born with a hunting gift and a mentoring gift,
+  0–100 (50 = average). Half of a gift comes from the parents (the average
+  of both), the other half is luck. The luck is the average of three rolls,
+  so very gifted and very ungifted kits are rare. Gifted parents often have
+  gifted kits, but not always.
+- **Training:** every moon, an apprentice's hunting skill grows by
+  **8.7** × hunting gift factor × mentor factor. Parts of a point are kept,
+  so nothing is lost to rounding. With 8.7, the average new warrior has
+  about 50 hunting.
+  - Hunting gift factor: from **0.3** (gift 0) over **1** (gift 50) to
+    **1.7** (gift 100).
+  - Mentor factor: from **0.5** (worst mentor) to **1.5** (best mentor).
+    Without a mentor, an apprentice learns at **0.3** on its own.
+- **Mentoring quality** = mentoring gift × experience. A mentor who has
+  never mentored only teaches with **60%** of its gift. Every moon of
+  mentoring adds experience, and after **24 moons** (about four
+  apprentices) the mentor teaches with its full gift. A cat with a low gift
+  stays a bad mentor, however long it mentors.
+- **Choosing a mentor:** when a kit becomes an apprentice, the leader picks
+  a mentor among the warriors, the deputy and the leader who don't have an
+  apprentice yet and aren't in the nursery. The leader can't see who has a
+  gift for mentoring. Good hunters and cats who have mentored before are
+  more likely to be chosen, but every free cat has a chance.
+- **Losing a mentor:** if a mentor dies, retires or moves to the nursery,
+  the apprentice gets a new mentor at the next moon. If no cat is free, it
+  waits for its old mentor and learns on its own in the meantime.
+- **Result:** a gifted apprentice with a great mentor can become a warrior
+  with 90+ hunting, an ungifted one with a bad mentor stays below 20.
+
 ## Starting Clan
 
 ThunderClan as at the start of *Into the Wild* (`StartingClans.cs`): 27 cats
 with Bluestar as leader and Redtail as deputy, 11 more warriors, 4
-apprentices, 4 elders, and the 6 kits of Frostfur and Brindleface.
+apprentices, 4 elders, and the 6 kits of Frostfur and Brindleface. The
+apprentices have their mentors from the book (Ravenpaw: Tigerclaw, Graypaw:
+Lionheart, Dustpaw: Redtail, Sandpaw: Whitestorm). Gifts fit the book:
+Tigerclaw is a great hunter but a bad mentor, Lionheart and Whitestorm are
+great mentors.
 
 ## Technical decisions
 
@@ -231,8 +274,8 @@ apprentices, 4 elders, and the 6 kits of Frostfur and Brindleface.
 ## Not in Milestone 1
 
 Thirst, social and other needs; health and injuries; sickness; medicine cats;
-mentors; personality beyond diligence; other Clans; predators; sim LODs; map
-and graphics; saving and loading.
+skills other than hunting; personality beyond diligence; other Clans;
+predators; sim LODs; map and graphics; saving and loading.
 
 ## Open questions
 

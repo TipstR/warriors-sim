@@ -152,7 +152,10 @@ public class World {
             var prefix = CatNames.RandomKitPrefix(Clan.Cats.Select(c => c.Prefix), _random);
             var sex = _random.Next(2) == 0 ? Sex.SheCat : Sex.Tom;
             var diligence = _random.Next(Tuning.SkillMin + 20, Tuning.SkillMax - 19);
-            var kit = new Cat(prefix + CatNames.KitSuffix, Rank.Kit, sex, 0, 0, diligence, mother, father);
+            var huntingGift = RollGift(mother.HuntingGift, father?.HuntingGift);
+            var mentoringGift = RollGift(mother.MentoringGift, father?.MentoringGift);
+            var kit = new Cat(prefix + CatNames.KitSuffix, Rank.Kit, sex, 0, 0, diligence,
+                huntingGift, mentoringGift, mother, father);
             Clan.AddCat(kit);
             kits.Add(kit);
         }
@@ -160,6 +163,19 @@ public class World {
         _birthsThisMoon += litterSize;
         var fatherText = father != null ? $" Their father is {father.Name}." : "";
         Log($"{mother.Name} gave birth to {litterSize} kits: {Names(kits)}.{fatherText}", LogLevel.Summary);
+    }
+
+    /// <summary>
+    ///     Part of a kit's gift comes from its parents (<see cref="Tuning.GiftInheritance" />), the rest is luck.
+    ///     The luck is the average of three rolls, so very gifted and very ungifted kits are rare.
+    /// </summary>
+    private int RollGift(int motherGift, int? fatherGift) {
+        var parents = fatherGift.HasValue ? (motherGift + fatherGift.Value) / 2f : motherGift;
+        var roll = (_random.Next(Tuning.SkillMax + 1) + _random.Next(Tuning.SkillMax + 1)
+                    + _random.Next(Tuning.SkillMax + 1)) / 3f;
+        var luck = roll - Tuning.AverageGift;
+        var gift = Tuning.AverageGift + Tuning.GiftInheritance * (parents - Tuning.AverageGift) + luck;
+        return Math.Clamp((int)MathF.Round(gift), Tuning.SkillMin, Tuning.SkillMax);
     }
 
     private int RollLitterSize() {
@@ -245,11 +261,13 @@ public class World {
     ///     and cats that are old enough move on to their next rank.
     /// </summary>
     private void AgeOneMoon() {
+        ReplaceLostMentors();
+
         foreach (var cat in Clan.Cats.ToList()) {
             cat.AgeOneMoon();
 
             if (cat.Rank == Rank.Apprentice)
-                cat.ImproveHunting(Tuning.ApprenticeHuntingGainPerMoon);
+                Train(cat);
 
             if (DiesOfOldAge(cat)) {
                 Clan.RecordDeath(cat);
@@ -262,19 +280,76 @@ public class World {
             if (cat.Rank == Rank.Kit && cat.AgeMoons >= Tuning.ApprenticeAgeMoons) {
                 var kitName = cat.Name;
                 cat.ChangeRank(Rank.Apprentice);
-                Log($"{kitName} has become an apprentice: {cat.Name}.", LogLevel.Summary);
+                var mentor = FindMentor(cat);
+                var mentorText = mentor != null
+                    ? $"{mentor.Name} is the mentor."
+                    : "No warrior is free to mentor them.";
+                Log($"{kitName} has become an apprentice: {cat.Name}. {mentorText}", LogLevel.Summary);
             }
             else if (cat.Rank == Rank.Apprentice && cat.AgeMoons >= Tuning.WarriorAgeMoons) {
                 var apprenticeName = cat.Name;
                 var otherNames = Clan.Cats.Where(c => c != cat).Select(c => c.Name);
                 cat.ChangeRank(Rank.Warrior, CatNames.RandomWarriorSuffix(cat.Prefix, otherNames, _random));
-                Log($"{apprenticeName} has become a warrior: {cat.Name}.", LogLevel.Summary);
+                var mentorText = cat.Mentor != null ? $", trained by {cat.Mentor.Name}" : "";
+                Log($"{apprenticeName} has become a warrior: {cat.Name} (hunting {cat.Hunting}{mentorText}).",
+                    LogLevel.Summary);
             }
             else if (cat.Rank is Rank.Warrior or Rank.Deputy && cat.AgeMoons >= Tuning.RetireAgeMoons) {
                 cat.ChangeRank(Rank.Elder);
                 Log($"{cat.Name} has retired to the elders' den.", LogLevel.Summary);
             }
         }
+    }
+
+    /// <summary>
+    ///     An apprentice learns every moon. How much depends on its hunting gift and on its mentor.
+    ///     Without a mentor it only learns a little on its own.
+    /// </summary>
+    private void Train(Cat apprentice) {
+        var mentor = IsAbleToMentor(apprentice.Mentor) ? apprentice.Mentor : null;
+        var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
+        var gain = Tuning.ApprenticeHuntingGainPerMoon * apprentice.HuntingLearningFactor * mentorFactor;
+
+        apprentice.ImproveHunting(gain);
+        mentor?.MentorOneMoon();
+    }
+
+    /// <summary>
+    ///     Apprentices whose mentor has died, retired or moved to the nursery get a new one.
+    ///     If none is free, they keep their old mentor, who takes them back when able again.
+    /// </summary>
+    private void ReplaceLostMentors() {
+        var withoutMentor = Clan.Cats
+            .Where(c => c.Rank == Rank.Apprentice && !IsAbleToMentor(c.Mentor))
+            .ToList();
+
+        foreach (var apprentice in withoutMentor) {
+            var mentor = FindMentor(apprentice);
+            if (mentor != null)
+                Log($"{mentor.Name} is {apprentice.Name}'s new mentor.", LogLevel.Summary);
+        }
+    }
+
+    private bool IsAbleToMentor(Cat mentor) {
+        return mentor != null && mentor.CanMentor && Clan.Cats.Contains(mentor);
+    }
+
+    /// <summary>
+    ///     The leader chooses a mentor among the cats who can mentor and don't have an apprentice yet.
+    ///     The leader can't see who has a gift for mentoring, so good hunters and cats who have mentored before
+    ///     are more likely to be chosen, but every free cat has a chance. Later the leader's personality will decide.
+    ///     Returns the new mentor, or null (and changes nothing) if no cat is free.
+    /// </summary>
+    private Cat FindMentor(Cat apprentice) {
+        var mentor = Clan.Cats
+            .Where(c => c.CanMentor && Clan.ApprenticeOf(c) == null)
+            .OrderByDescending(c =>
+                (float)c.Hunting / Tuning.SkillMax + c.MentoringExperience + (float)_random.NextDouble())
+            .FirstOrDefault();
+
+        if (mentor != null)
+            apprentice.SetMentor(mentor);
+        return mentor;
     }
 
     /// <summary>The chance starts at <see cref="Tuning.OldAgeStartMoons" /> and doubles regularly after that.</summary>
