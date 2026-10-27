@@ -1,0 +1,140 @@
+[gd_scene format=3 uid="uid://bdk7afhyv7xsg"]
+
+[ext_resource type="Script" uid="uid://1defver1kf2w" path="res://scripts/UI/SimulationUi.cs" id="1_simui"]
+
+[node name="SimulationUi" type="Control" unique_id=94565664]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_simui")
+
+[node name="TabContainer" type="TabContainer" parent="." unique_id=1715873630]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 0
+
+[node name="Clan" type="TabBar" parent="TabContainer" unique_id=43775697]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="CatList" type="Tree" parent="TabContainer/Clan" unique_id=1205185659]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+columns = 7
+
+[node name="NewCat" type="GridContainer" parent="TabContainer/Clan" unique_id=2051406305]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.1
+columns = 7
+
+[node name="Label" type="Label" parent="TabContainer/Clan/NewCat" unique_id=2137059112]
+layout_mode = 2
+text = "Name"
+horizontal_alignment = 1
+
+[node name="Label2" type="Label" parent="TabContainer/Clan/NewCat" unique_id=1122720724]
+layout_mode = 2
+text = "Rank"
+horizontal_alignment = 1
+
+[node name="Label6" type="Label" parent="TabContainer/Clan/NewCat" unique_id=1677170825]
+layout_mode = 2
+text = "Sex"
+horizontal_alignment = 1
+
+[node name="Label3" type="Label" parent="TabContainer/Clan/NewCat" unique_id=255784016]
+layout_mode = 2
+text = "Age (0-200)"
+horizontal_alignment = 1
+
+[node name="Label4" type="Label" parent="TabContainer/Clan/NewCat" unique_id=343388215]
+layout_mode = 2
+text = "Hunting Skill (0-100)"
+horizontal_alignment = 1
+
+[node name="Label5" type="Label" parent="TabContainer/Clan/NewCat" unique_id=1405012669]
+layout_mode = 2
+text = "Diligence (0-100)"
+horizontal_alignment = 1
+
+[node name="Label7" type="Label" parent="TabContainer/Clan/NewCat" unique_id=2110734831]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Name" type="LineEdit" parent="TabContainer/Clan/NewCat" unique_id=1508472460]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+placeholder_text = "Name"
+alignment = 1
+
+[node name="Rank" type="OptionButton" parent="TabContainer/Clan/NewCat" unique_id=1702693717]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Sex" type="OptionButton" parent="TabContainer/Clan/NewCat" unique_id=1098940179]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Age" type="SpinBox" parent="TabContainer/Clan/NewCat" unique_id=1723482159]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+max_value = 200.0
+
+[node name="Hunting" type="SpinBox" parent="TabContainer/Clan/NewCat" unique_id=2074995904]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Diligence" type="SpinBox" parent="TabContainer/Clan/NewCat" unique_id=599395933]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CreateCat" type="Button" parent="TabContainer/Clan/NewCat" unique_id=923462060]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Create Cat"
+
+[node name="TabBar2" type="TabBar" parent="TabContainer" unique_id=1619689675]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Button" type="Button" parent="TabContainer/TabBar2" unique_id=673543735]
+layout_mode = 0
+offset_right = 423.0
+offset_bottom = 249.0
+text = "Hello2"
+
+[node name="TabBar3" type="TabBar" parent="TabContainer" unique_id=2082061181]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Button" type="Button" parent="TabContainer/TabBar3" unique_id=1539322861]
+layout_mode = 0
+offset_right = 423.0
+offset_bottom = 249.0
+text = "Hello3"

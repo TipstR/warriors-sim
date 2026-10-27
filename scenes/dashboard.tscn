@@ -1,8 +1,8 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://chtq3ihnkyvxk"]
 
-[ext_resource type="Script" path="res://scripts/UI/Dashboard.cs" id="1_dashboard"]
+[ext_resource type="Script" uid="uid://cxwriiprerncw" path="res://scripts/UI/Dashboard.cs" id="1_dashboard"]
 
-[node name="Dashboard" type="Control"]
+[node name="Dashboard" type="Control" unique_id=1183900373]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
