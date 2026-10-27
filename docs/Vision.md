@@ -143,11 +143,14 @@ Every cat has basic needs. Current list **[Decided]**:
 - "Mattering" (feeling important or useful), with a question mark in your
   notes **[Open]**
 
+Built so far: **hunger** (satiation and starvation stacks) and **sleep**
+(energy). Hunger has consequences: starving cats get weaker (lower max energy)
+and can die. Who eats first is decided by the leader's feeding policy, see
+6.4.
+
 Still to decide **[Open]**:
 
-- What happens when a need isn't met (penalties, illness, bad mood, death)?
-- How needs are met. Does every cat eat when it's hungry, or are there Clan
-  rules (e.g. elders and queens eat first, prey goes to the fresh-kill pile)?
+- What happens when the other needs aren't met (bad mood, illness, ...)?
 - Whether thirst stays. (It was suggested to drop it, since in the books cats
   rarely go out of their way to drink. It is still on your list.)
 
@@ -171,6 +174,26 @@ leader has to answer:
 
 Example rule: *If the fresh-kill pile is empty, a hunting patrol must be
 organized.* **[Decided]**
+
+**Feeding policy** (built): when there isn't enough prey, the leader decides
+who eats first with weighted scores. The weights are the leader's style and
+will later come from personality:
+
+| Weight           | Means                                              |
+|------------------|----------------------------------------------------|
+| Starving first   | starving cats always eat first                     |
+| Urgency          | the closer to death, the sooner a cat eats         |
+| Compassion       | protects kits, queens, elders, apprentices         |
+| Pragmatism       | feeds the best hunters                             |
+| Warrior code     | kits, queens, elders, leader, deputy, warriors ... |
+| Famine priority  | in a famine, hunters are fed so the Clan can hunt  |
+
+Leader styles built so far: Balanced, Compassionate (a Firestar), Ruthless
+(a Tigerclaw) and By the code (follows the code even if all apprentices
+starve). Every style has its own way of failing, which creates stories.
+
+**Succession** (built): when the leader dies, the deputy becomes leader and a
+new deputy is chosen (for now: the best hunter).
 
 ### 6.5 Activities
 
@@ -234,9 +257,9 @@ Still to decide **[Open]**:
 - First needs and basic leader decisions are implemented. **[Decided]**
 - This is essentially the **abstract simulation level**. **[Proposed]**
 - Details and rules: see `docs/Milestone1.md`.
-- **Status: the core works.** ThunderClan (16 cats) runs for two years with
-  seasons. The leader sends hunting patrols, cats eat from the fresh-kill
-  pile, and the full log is written to `logs/simulation.log`.
+- **Status: done and extended.** ThunderClan sustains itself over decades:
+  cats are born, grow up, find mates, have kits, retire and die. A dashboard
+  in Godot shows the simulation live. See section 9.
 
 ### Milestone 2 – First Territory
 
@@ -249,36 +272,76 @@ Still to decide **[Open]**:
 
 - Switching between levels at borders and after time skips
 - Other Clans, Gatherings, predators, disasters
-- Rank progression (apprentice → warrior / medicine cat → deputy → leader)
+- Medicine cats as a rank and career
 
 ## 9. Current State and Next Steps
 
 ### Already built
 
-- Cats with rank, age, hunting skill, diligence and satiation
-- ThunderClan from the start of *Into the Wild* (16 cats)
-- Time: 4 ticks per day, moons and the four seasons
-- Fresh-kill pile and eating order
-- Leader AI for hunting patrols (several patrols at once, best hunters first,
-  planning margin, no back-to-back patrols)
-- Seasons change the hunting chance
-- Full log to a file, moon summaries in Godot's Output panel
+**World and time**
+
+- 4 ticks per day (dawn, sunhigh, evening, night), moons, four seasons
+- Territory with limited prey per day, less in bad seasons
+
+**Cats**
+
+- Name (prefix + suffix that changes with rank: Graykit, Graypaw,
+  Graycloud, Graystar), sex, age, rank, hunting skill, diligence
+- Mother, father and mate
+- Satiation, energy (sleep), starvation stacks
+- Food need by age (based on real kittens): nursing kits need no prey,
+  growing cats eat about as much as adults
+
+**Hunting and food**
+
+- Leader sends as many patrols as needed, best hunters first, cats don't
+  hunt twice in a row, tired and sleeping cats are left out
+- Catch chance from skill, diligence, energy (S-curve), season and how much
+  prey the territory has left today
+- Fresh-kill pile with the feeding policy (see 6.4)
+- Starvation: stacks lower max energy, death becomes a growing risk from 8
+  stacks (twice as high for kits and elders), certain at 20
+- Famine: hunters are fed first, elders and queens help hunting
+
+**Life cycle**
+
+- Aging every moon, ceremonies (apprentice at 6 moons, warrior at 12),
+  apprentices improve while training, retirement at 120 moons
+- Death of old age from 96 moons, succession of leader and deputy
+- Mates (placeholder rule), pregnancy (63 days), litters of 1–6 kits
+- Nursery: queens share their milk with all kits, orphans included
+- Fewer births in hunger, when crowded, and outside newleaf and greenleaf
+
+**Tools**
+
+- Dashboard in Godot (`scenes/dashboard.tscn`): time and speed controls,
+  Clan overview, cat list with bars, log
+- Full log in `logs/simulation.log`
+- All balancing values in `scripts/Simulation/Tuning.cs`
+
+### Lessons from balancing
+
+- The simulation tips over easily. Every downward spiral (hunger → weakness
+  → less prey) needs a counterweight (sharing, famine rules, elders and
+  queens helping).
+- Without a prey limit the Clan grows forever, without births it dies out,
+  and a birth brake that is too strong lets the Clan age until it collapses.
+- Right now cats only die of hunger and old age. Predators, sickness and
+  Clan battles will take over part of this. Births, crowding and old age
+  will need to be retuned then.
 
 ### Possible next steps **[Proposed]**
 
-Ordered so that each step makes the next one more interesting:
-
-1. **Consequences of hunger:** starving cats hunt worse, get weaker, and can
-   die. First real stories ("the hard leaf-bare").
-2. **Aging and training:** cats age every moon. Apprentices get better at
-   hunting, kits become apprentices, warriors become elders. Fits "skill
-   matters".
-3. **Mentors:** every apprentice has a mentor, and a good mentor trains
-   faster. First relationship between cats, and the basis for "I trained him".
-4. **Injuries:** hunting can hurt a cat, and an injured cat hunts worse. First
-   step toward the health system.
-5. **Chronicle:** important events (deaths, new apprentices, new warriors) go
-   into a separate log that reads like the Clan's history.
+1. **Mentors:** every apprentice has a mentor, and a good mentor trains
+   faster. First real relationship, and the basis for "I trained him".
+2. **Danger:** injuries while hunting, predators (foxes, badgers), sickness.
+   Gives the Clan other ways to lose cats than hunger and old age.
+3. **Medicine cats:** heal injuries and sickness, a separate career.
+4. **Chronicle:** important events (births, deaths, ceremonies, new
+   leaders) in a separate log that reads like the Clan's history.
+5. **Relationships and personality:** replace the placeholder rule for
+   mates, leader styles from personality.
+6. **Milestone 2:** the first territory as a 2D world.
 
 ## 10. Story Mode (Idea)
 
