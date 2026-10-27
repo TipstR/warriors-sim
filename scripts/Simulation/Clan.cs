@@ -51,8 +51,11 @@ public class Clan {
     }
 
     /// <summary>
-    ///     A famine: at least <see cref="Tuning.FamineStarvingCats" /> cats carry starvation stacks.
-    ///     Elders and queens then help with hunting, and most leaders feed the hunters first.
+    ///     Whether the Clan is in a famine. Elders and queens then help with hunting, and most leaders feed the
+    ///     hunters first. Set by the world, see World.UpdateFamine.
     /// </summary>
-    public bool IsInFamine => _cats.Count(c => c.StarvationStacks > 0) >= Tuning.FamineStarvingCats;
+    public bool IsInFamine { get; set; }
+
+    /// <summary>How many cats are starving badly enough to count for a famine, see <see cref="Tuning.FamineMinStacks" />.</summary>
+    public int StarvingCatCount => _cats.Count(c => c.StarvationStacks >= Tuning.FamineMinStacks);
 }

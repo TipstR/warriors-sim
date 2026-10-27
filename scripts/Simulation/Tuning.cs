@@ -136,6 +136,18 @@ public static class Tuning {
     /// </summary>
     [TuningGroup("Starvation")] public static int FamineStarvingCats = 3;
 
+    /// <summary>
+    ///     A cat only counts as starving for a famine with at least this many stacks.
+    ///     One stack after a hungry night is normal, it's not a famine yet.
+    /// </summary>
+    [TuningGroup("Starvation")] public static int FamineMinStacks = 2;
+
+    /// <summary>
+    ///     A famine only ends after fewer than <see cref="FamineStarvingCats" /> cats were starving for this many
+    ///     ticks in a row (12 = three days). Keeps the famine from starting and ending every day.
+    /// </summary>
+    [TuningGroup("Starvation")] public static int FamineEndTicks = 12;
+
     /// <summary>Elders who help hunting in a famine are slower than they used to be.</summary>
     [TuningGroup("Starvation")] public static float ElderHuntingMultiplier = 0.6f;
 

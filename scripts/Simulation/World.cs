@@ -17,7 +17,7 @@ public class World {
     private int _mealsMissedThisMoon;
     private int _miceCaughtToday;
     private int _birthsThisMoon;
-    private bool _wasInFamine;
+    private int _ticksWithoutFamineHunger;
 
     // Statistics for the moon summary
     private int _miceCaughtThisMoon;
@@ -385,12 +385,32 @@ public class World {
         _starvationStackSumThisMoon += Clan.Cats.Sum(c => c.StarvationStacks);
         _catTicksThisMoon += Clan.Cats.Count;
 
-        var famine = Clan.IsInFamine;
-        if (famine && !_wasInFamine)
-            Log($"Famine in {Clan.Name}! Elders and queens join the hunt.", LogLevel.Summary);
-        else if (!famine && _wasInFamine)
+        UpdateFamine();
+    }
+
+    /// <summary>
+    ///     A famine starts when at least <see cref="Tuning.FamineStarvingCats" /> cats carry starvation stacks.
+    ///     It only ends after there were fewer than that for <see cref="Tuning.FamineEndTicks" /> ticks in a row,
+    ///     so the usual rise of hunger at night doesn't start and end a famine every day.
+    /// </summary>
+    private void UpdateFamine() {
+        var manyStarving = Clan.StarvingCatCount >= Tuning.FamineStarvingCats;
+
+        if (!Clan.IsInFamine) {
+            if (manyStarving) {
+                Clan.IsInFamine = true;
+                _ticksWithoutFamineHunger = 0;
+                Log($"Famine in {Clan.Name}! Elders and queens join the hunt.", LogLevel.Summary);
+            }
+
+            return;
+        }
+
+        _ticksWithoutFamineHunger = manyStarving ? 0 : _ticksWithoutFamineHunger + 1;
+        if (_ticksWithoutFamineHunger >= Tuning.FamineEndTicks) {
+            Clan.IsInFamine = false;
             Log($"The famine in {Clan.Name} is over.", LogLevel.Summary);
-        _wasInFamine = famine;
+        }
     }
 
     /// <summary>
