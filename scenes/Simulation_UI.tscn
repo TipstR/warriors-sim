@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://1defver1kf2w" path="res://scripts/UI/SimulationUi.cs" id="1_simui"]
 
+[sub_resource type="ButtonGroup" id="ButtonGroup_speeds"]
+
 [node name="SimulationUi" type="Control" unique_id=94565664]
 layout_mode = 3
 anchors_preset = 15
@@ -117,24 +119,134 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 text = "Create Cat"
 
-[node name="TabBar2" type="TabBar" parent="TabContainer" unique_id=1619689675]
+[node name="Tuning" type="TabBar" parent="TabContainer" unique_id=1619689675]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="Button" type="Button" parent="TabContainer/TabBar2" unique_id=673543735]
-layout_mode = 0
-offset_right = 423.0
-offset_bottom = 249.0
-text = "Hello2"
+[node name="TuningHeader" type="HBoxContainer" parent="TabContainer/Tuning" unique_id=1860231574]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.06
+grow_horizontal = 2
 
-[node name="TabBar3" type="TabBar" parent="TabContainer" unique_id=2082061181]
+[node name="TuningHint" type="Label" parent="TabContainer/Tuning/TuningHeader" unique_id=1395027781]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Values are used when the simulation starts. Changed values are highlighted."
+vertical_alignment = 1
+
+[node name="ResetTuning" type="Button" parent="TabContainer/Tuning/TuningHeader" unique_id=673543735]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Reset to defaults"
+
+[node name="TuningTable" type="Tree" parent="TabContainer/Tuning" unique_id=1742906318]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.06
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+columns = 3
+column_titles_visible = true
+hide_root = true
+
+[node name="Simulation" type="TabBar" parent="TabContainer" unique_id=2082061181]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
-[node name="Button" type="Button" parent="TabContainer/TabBar3" unique_id=1539322861]
-layout_mode = 0
-offset_right = 423.0
-offset_bottom = 249.0
-text = "Hello3"
+[node name="Controls" type="HBoxContainer" parent="TabContainer/Simulation" unique_id=1310452981]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.06
+grow_horizontal = 2
+theme_override_constants/separation = 8
+
+[node name="TimeLabel" type="Label" parent="TabContainer/Simulation/Controls" unique_id=1928374651]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Not started yet"
+vertical_alignment = 1
+
+[node name="StartSimulation" type="Button" parent="TabContainer/Simulation/Controls" unique_id=1539322861]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start simulation"
+
+[node name="PlayPause" type="Button" parent="TabContainer/Simulation/Controls" unique_id=1475839201]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+disabled = true
+text = "Play"
+
+[node name="Speeds" type="HBoxContainer" parent="TabContainer/Simulation/Controls" unique_id=1093847562]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Speed1" type="Button" parent="TabContainer/Simulation/Controls/Speeds" unique_id=1184736290]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+toggle_mode = true
+button_group = SubResource("ButtonGroup_speeds")
+text = "1×"
+metadata/ticks_per_second = 1.0
+
+[node name="Speed10" type="Button" parent="TabContainer/Simulation/Controls/Speeds" unique_id=1284736291]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+toggle_mode = true
+button_group = SubResource("ButtonGroup_speeds")
+text = "10×"
+metadata/ticks_per_second = 10.0
+
+[node name="Speed100" type="Button" parent="TabContainer/Simulation/Controls/Speeds" unique_id=1384736292]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+toggle_mode = true
+button_group = SubResource("ButtonGroup_speeds")
+text = "100×"
+metadata/ticks_per_second = 100.0
+
+[node name="Speed1000" type="Button" parent="TabContainer/Simulation/Controls/Speeds" unique_id=1484736293]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+toggle_mode = true
+button_group = SubResource("ButtonGroup_speeds")
+text = "1000×"
+metadata/ticks_per_second = 1000.0
+
+[node name="ShowDetails" type="CheckBox" parent="TabContainer/Simulation/Controls" unique_id=1573920184]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show details"
+
+[node name="ClanLabel" type="Label" parent="TabContainer/Simulation" unique_id=1662839105]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.06
+anchor_right = 1.0
+anchor_bottom = 0.1
+grow_horizontal = 2
+vertical_alignment = 1
+
+[node name="Log" type="RichTextLabel" parent="TabContainer/Simulation" unique_id=1751928306]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+scroll_following = true
+selection_enabled = true
