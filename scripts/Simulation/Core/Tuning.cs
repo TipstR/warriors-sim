@@ -39,12 +39,12 @@ public static class Tuning {
     [TuningGroup("Aging")] public static int RetireAgeMoons = 120;
 
     /// <summary>
-    ///     How much an apprentice's hunting skill improves every moon of training, before its gift and its mentor are
-    ///     applied (see the Gifts and Mentors groups). Most mentors are not fully experienced, so the average
-    ///     apprentice learns a bit less than this. With 8.7, the average new warrior has about 50 hunting.
-    ///     Careful: the Clan's survival is very sensitive to that average.
+    ///     How much an apprentice's hunting skill improves every moon of training, before its gift, its mentor and the
+    ///     difficulty of the next levels are applied (see <see cref="Skill.Improve" />). Each level is harder than the
+    ///     one before, so an apprentice learns less every moon. Tuned so that the average new warrior has about
+    ///     50 hunting. Careful: the Clan's survival is very sensitive to that average.
     /// </summary>
-    [TuningGroup("Aging")] public static float ApprenticeHuntingGainPerMoon = 8.7f;
+    [TuningGroup("Aging")] public static float ApprenticeHuntingGainPerMoon = 10.5f;
 
     /// <summary>From this age on, a cat can die of old age (96 moons = 8 years).</summary>
     [TuningGroup("Aging")] public static int OldAgeStartMoons = 96;
@@ -74,11 +74,19 @@ public static class Tuning {
     /// </summary>
     [TuningGroup("Gifts")] public static float GiftInheritance = 0.5f;
 
-    /// <summary>How fast the least gifted cat (gift 0) learns to hunt. 1 = average.</summary>
+    /// <summary>How fast the least gifted cat (gift 0) learns a skill. 1 = average.</summary>
     [TuningGroup("Gifts")] public static float LeastGiftedLearningFactor = 0.3f;
 
-    /// <summary>How fast the most gifted cat (gift 100) learns to hunt. 1 = average.</summary>
+    /// <summary>How fast the most gifted cat (gift 100) learns a skill. 1 = average.</summary>
     [TuningGroup("Gifts")] public static float MostGiftedLearningFactor = 1.7f;
+
+    /// <summary>
+    ///     How much harder every level of a skill gets. Each gain is multiplied by (1 − level / 100) to this power:
+    ///     with 0.5, a cat at level 50 learns at 71% speed, at 90 at 32%, at 95 at 22%. So the first levels come
+    ///     quickly and only the best get very high. 0 = every level is equally easy, 1 = steeper (nobody got past 89).
+    ///     Tested with 100 seeds × 30 years: about 1 in 450 new warriors starts with 90+ hunting.
+    /// </summary>
+    [TuningGroup("Gifts")] public static float SkillDifficulty = 0.5f;
 
     /// <summary>
     ///     How rare a gift for healing is. The luck part of the healing gift is 100 × (random 0–1) to this power.
@@ -107,10 +115,10 @@ public static class Tuning {
     [TuningGroup("Medicine")] public static int MedicineCatAgeMoons = 18;
 
     /// <summary>
-    ///     How much a medicine cat apprentice's healing skill improves every moon, before its healing gift and its
-    ///     mentor are applied (like <see cref="ApprenticeHuntingGainPerMoon" />).
+    ///     How much a medicine cat apprentice's healing skill improves every moon, before its healing gift, its
+    ///     mentor and the difficulty of the next levels are applied (like <see cref="ApprenticeHuntingGainPerMoon" />).
     /// </summary>
-    [TuningGroup("Medicine")] public static float MedicineApprenticeHealingGainPerMoon = 6f;
+    [TuningGroup("Medicine")] public static float MedicineApprenticeHealingGainPerMoon = 7.5f;
 
     /// <summary>
     ///     How many healers (medicine cats and their apprentice) the Clan wants. While it has fewer, it looks for an
@@ -164,11 +172,11 @@ public static class Tuning {
     /// <summary>A wound cared for by a healer with healing 100 gets infected this much less often (0.5 = half as often).</summary>
     [TuningGroup("Medicine")] public static float CareInfectionReduction = 0.5f;
 
-    /// <summary>How much a healer's skill improves every time it cares for a cat, before its healing gift is applied.</summary>
+    /// <summary>How much a healer's skill improves every time it cares for a cat, before its gift and the difficulty.</summary>
     [TuningGroup("Medicine")] public static float HealingPracticePerCare = 0.02f;
 
     /// <summary>
-    ///     How much a cat that is cared for learns about healing every time, before its healing gift is applied.
+    ///     How much a cat that is cared for learns about healing every time, before its gift and the difficulty.
     ///     "Cats that are often in the medicine den learn one or two things."
     /// </summary>
     [TuningGroup("Medicine")] public static float PatientHealingGainPerCare = 0.05f;

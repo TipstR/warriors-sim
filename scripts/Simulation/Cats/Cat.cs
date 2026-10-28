@@ -89,7 +89,7 @@ public class Cat {
     ///     Gives the cat a new level and gift for a skill, e.g. for cats that start the game or a kit's inherited gift.
     ///     Not for learning: use <see cref="Skill.Improve" /> for that.
     /// </summary>
-    public void SetSkill(SkillType type, int level, int gift) {
+    public void SetSkill(SkillType type, float level, int gift) {
         _skills[type] = new Skill(level, gift);
     }
 

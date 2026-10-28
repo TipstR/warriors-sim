@@ -12,19 +12,20 @@ public enum SkillType {
 
 /// <summary>
 ///     How good a cat is at one thing (<see cref="Level" />) and how gifted it was born for it (<see cref="Gift" />).
-///     Learning works the same for every skill: the gift decides how fast the cat learns. How a skill is used
-///     (catch chance, care, ...) is up to the code that uses it.
+///     Learning works the same for every skill: gifted cats learn faster, and every level is a bit harder than the one
+///     before. How a skill is used (catch chance, care, ...) is up to the code that uses it.
 /// </summary>
 public class Skill {
-    private float _progress;
-
-    public Skill(int level, int gift) {
+    public Skill(float level, int gift) {
         Level = Math.Clamp(level, Tuning.SkillMin, Tuning.SkillMax);
         Gift = Math.Clamp(gift, Tuning.SkillMin, Tuning.SkillMax);
     }
 
-    /// <summary>How good the cat is, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />.</summary>
-    public int Level { get; private set; }
+    /// <summary>
+    ///     How good the cat is, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />. A decimal, so
+    ///     even a small lesson counts. Rounded only for display.
+    /// </summary>
+    public float Level { get; private set; }
 
     /// <summary>
     ///     How gifted the cat was born for this, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />.
@@ -38,16 +39,20 @@ public class Skill {
         + (Tuning.MostGiftedLearningFactor - Tuning.LeastGiftedLearningFactor) * Gift / Tuning.SkillMax;
 
     /// <summary>
-    ///     The level is a whole number, so parts of a point are kept until they add up to a full point. Otherwise a
-    ///     gain of 5.4 every moon would always be rounded down to 5. Never above <paramref name="cap" />.
+    ///     How much of a lesson still sticks at the current level, from 1 (a beginner learns everything) to 0
+    ///     (perfect, nothing left to learn). See <see cref="Tuning.SkillDifficulty" />.
     /// </summary>
-    public void Improve(float amount, int cap = Tuning.SkillMax) {
+    public float Difficulty => MathF.Pow(1f - Level / Tuning.SkillMax, Tuning.SkillDifficulty);
+
+    /// <summary>
+    ///     The cat learns: the skill grows by <paramref name="amount" /> × <see cref="LearningFactor" /> ×
+    ///     <see cref="Difficulty" />, so the first levels come quickly and only the best get very high.
+    ///     Never above <paramref name="cap" />.
+    /// </summary>
+    public void Improve(float amount, float cap = Tuning.SkillMax) {
         if (Level >= cap)
             return;
 
-        _progress += amount;
-        var fullPoints = (int)_progress;
-        _progress -= fullPoints;
-        Level = Math.Clamp(Level + fullPoints, Tuning.SkillMin, cap);
+        Level = Math.Min(cap, Level + amount * LearningFactor * Difficulty);
     }
 }

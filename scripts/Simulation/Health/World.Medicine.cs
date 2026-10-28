@@ -94,7 +94,7 @@ public partial class World {
         var otherNames = Clan.Cats.Where(c => c != apprentice).Select(c => c.Name);
         apprentice.ChangeRank(Rank.MedicineCat,
             CatNames.RandomWarriorSuffix(apprentice.Prefix, otherNames, _random));
-        Log($"{apprenticeName} has become a medicine cat: {apprentice.Name} (healing {Healing(apprentice).Level}).",
+        Log($"{apprenticeName} has become a medicine cat: {apprentice.Name} (healing {Healing(apprentice).Level:0}).",
             LogLevel.Summary);
     }
 
@@ -113,8 +113,7 @@ public partial class World {
         }
 
         var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
-        Healing(apprentice).Improve(
-            Tuning.MedicineApprenticeHealingGainPerMoon * Healing(apprentice).LearningFactor * mentorFactor);
+        Healing(apprentice).Improve(Tuning.MedicineApprenticeHealingGainPerMoon * mentorFactor);
         mentor?.MentorOneMoon();
     }
 
@@ -258,11 +257,11 @@ public partial class World {
         GiveHerbs(caregiver, patient);
 
         var caregiverCap = caregiver.IsMedicineCat ? Tuning.SkillMax : Healing(caregiver).Gift;
-        Healing(caregiver).Improve(Tuning.HealingPracticePerCare * Healing(caregiver).LearningFactor, caregiverCap);
+        Healing(caregiver).Improve(Tuning.HealingPracticePerCare, caregiverCap);
 
         if (patient != caregiver && !patient.IsMedicineCat)
-            Healing(patient).Improve(Tuning.PatientHealingGainPerCare * Healing(patient).LearningFactor,
-                (int)(Healing(patient).Gift * Tuning.PatientHealingCapShare));
+            Healing(patient).Improve(Tuning.PatientHealingGainPerCare,
+                Healing(patient).Gift * Tuning.PatientHealingCapShare);
     }
 
     /// <summary>
@@ -350,7 +349,7 @@ public partial class World {
     }
 
     private string MedicineSummary() {
-        var healers = Clan.Cats.Where(c => c.IsMedicineCat).Select(c => $"{c.Name} {Healing(c).Level}").ToList();
+        var healers = Clan.Cats.Where(c => c.IsMedicineCat).Select(c => $"{c.Name} {Healing(c).Level:0}").ToList();
         return $"healers: {(healers.Count > 0 ? string.Join(", ", healers) : "none")}, herbs: {Clan.HerbStore}";
     }
 }

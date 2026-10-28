@@ -225,7 +225,7 @@ public partial class SimulationUi : Control {
         // For a nicer text than the name in the code ("SheCat"), choose the text yourself
         row.SetText(2, cat.Sex == Sex.SheCat ? "She-cat" : "Tom");
         row.SetText(3, $"{cat.AgeMoons} moons");
-        row.SetText(4, cat.Skills[SkillType.Hunting].Level.ToString());
+        row.SetText(4, cat.Skills[SkillType.Hunting].Level.ToString("0"));
         row.SetText(5, cat.Diligence.ToString());
         // ?. and ?? handle cats without a known mother: then the cell stays empty
         row.SetText(6, cat.Mother?.Name ?? "");

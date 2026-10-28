@@ -308,7 +308,7 @@ public partial class World {
                 var otherNames = Clan.Cats.Where(c => c != cat).Select(c => c.Name);
                 cat.ChangeRank(Rank.Warrior, CatNames.RandomWarriorSuffix(cat.Prefix, otherNames, _random));
                 var mentorText = cat.Mentor != null ? $", trained by {cat.Mentor.Name}" : "";
-                Log($"{apprenticeName} has become a warrior: {cat.Name} (hunting {cat.Skills[SkillType.Hunting].Level}{mentorText}).",
+                Log($"{apprenticeName} has become a warrior: {cat.Name} (hunting {cat.Skills[SkillType.Hunting].Level:0}{mentorText}).",
                     LogLevel.Summary);
             }
             else if (cat.Rank == Rank.MedicineCatApprentice && cat.AgeMoons >= Tuning.MedicineCatAgeMoons) {
@@ -328,10 +328,7 @@ public partial class World {
     private void Train(Cat apprentice) {
         var mentor = IsAbleToMentor(apprentice.Mentor) ? apprentice.Mentor : null;
         var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
-        var hunting = apprentice.Skills[SkillType.Hunting];
-        var gain = Tuning.ApprenticeHuntingGainPerMoon * hunting.LearningFactor * mentorFactor;
-
-        hunting.Improve(gain);
+        apprentice.Skills[SkillType.Hunting].Improve(Tuning.ApprenticeHuntingGainPerMoon * mentorFactor);
         mentor?.MentorOneMoon();
     }
 
