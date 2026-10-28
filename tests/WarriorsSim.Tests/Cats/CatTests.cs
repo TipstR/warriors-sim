@@ -9,6 +9,7 @@ public class CatTests {
         TuningSettings.ResetToDefaults();
     }
 
+    // Frailty Test
     [Theory]
     [InlineData(0, 1f)] // newborn kit: fully frail
     [InlineData(3, 0.5f)] // halfway to KitFrailtyEndsMoons
@@ -31,4 +32,5 @@ public class CatTests {
 
         Assert.Equal(elder.Frailty, leader.Frailty);
     }
+    
 }
