@@ -18,4 +18,8 @@
     <None Include="ui\**\*.tscn" />
     <None Include="ui\**\*.uid" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="game\Player.tscn" />
+    <Content Include="game\scripts\Player.cs.uid" />
+  </ItemGroup>
 </Project>
