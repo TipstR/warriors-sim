@@ -15,6 +15,10 @@ medicine cats are newer than the other docs).
   option, and keep steps small enough to build and test.
 - Often writes parts of the code themselves (especially UI). When they say
   they want to do something themselves, explain and don't change the file.
+- **Ask questions as plain text, never as multiple choice** (no question
+  tool). The user wants to answer in their own words. Put numbered questions
+  with context and a recommendation at the end, then wait for the answer.
+- Don't just agree: if the user's idea has a problem, say so.
 
 ## Design principles
 

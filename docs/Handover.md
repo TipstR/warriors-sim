@@ -1,163 +1,120 @@
-# Handover – State and TODO (2026-10-27)
+# Handover – State and TODO (2026-10-28)
 
-Written at the end of a work session on the laptop, so work can continue on
-another machine with another agent. Read `CLAUDE.md` first.
+For the next agent, on any machine. Read `CLAUDE.md` first. This file holds
+what's in progress, what's planned and the user's decisions, because the
+agents' own memory doesn't move between computers.
 
-## What was done in this session
+## Current state (newest first)
 
-1. **Docs brought up to date** (commit `09de888`). `Milestone1.md` describes
-   the rules as they are in the code, not the original plan.
-2. **Gifts and mentors** (commit `17bfd81`).
-   - Every kit is born with a hunting gift and a mentoring gift (0–100,
-     50 = average): half from the parents, half luck.
-   - Apprentices learn from a mentor. Learning speed = gift × mentor quality,
-     and mentor quality = mentoring gift × experience (moons mentored).
-   - New warriors now range from below 20 to 100 hunting, instead of all 48.
-   - The base training gain was raised from 8 to 8.7, because the Clan's
-     survival is very sensitive to the *average* hunting skill.
-3. **Sickness, injuries, medicine cats, medicine den, herbs** (this commit,
-   not documented in `Milestone1.md` yet):
-   - `Condition.cs`: one sickness or injury. Severity races against recovery:
-     at recovery 100 the cat heals, at severity 100 it dies.
-   - `World.Health.cs`:
-     - whitecough and greencough, contagious within the same den (`Den.cs`)
-     - whitecough can turn into greencough
-     - hunting injuries (sprain, thorn, fall…) that can get infected
-   - `World.Medicine.cs`:
-     - medicine cat career (new ranks `MedicineCatApprentice`, `MedicineCat`;
-       they don't hunt, mate or have kits)
-     - a rare healing gift (most cats 0–30), healing skill
-     - choosing an apprentice (best healing gift, only when the Clan needs one)
-     - care: the best healers care for the sickest; warriors learn a little
-       healing as patients
-     - medicine den with 5 nests (the sickest get them; patients rest and are
-       isolated)
-     - herb store (`Herb.cs`): tansy, catmint, cobwebs, marigold; gathered,
-       seasonal, spoiling; catmint is very rare in leaf-bare
-   - Spottedleaf starts as medicine cat. Cinderkit has a high healing gift.
-   - Sick cats hunt worse and eat earlier under the warrior code. Very sick
-     cats (severity ≥ 60) can't hunt.
-4. **Soft birth brake** (`Tuning.MinCrowdingFactor` = 0.2). The crowding brake
-   used to stop all births in a full Clan. Once medicine cats kept everyone
-   alive, about half of all Clans grew old together and died out. Now births
-   never stop completely, and hunger thins the Clan instead.
+- **Skill overhaul, step 1 of 4 done** (`34adcba`): skill levels are floats,
+  every level is harder (`Skill.Improve`: amount × gift factor ×
+  (1 − level/100)^`SkillDifficulty`, 0.5). Training gain 10.5 → average new
+  warrior ~54 hunting, about 1 in 450 starts with 90+. Medicine apprentice
+  gain 7.5.
+- **Skill refactor** (`1d76940`): `cat.Skills[SkillType.Hunting].Level` /
+  `.Gift`, `cat.SetSkill(...)` for setup. Proven identical logs before/after.
+- **Unit tests** (`4f6f2d7`): `tests/WarriorsSim.Tests`, xUnit, see CLAUDE.md.
+- **Frailty by age, not rank** (`33d523b`, `57a8dca`, `478fe33`): used for
+  starvation, sickness recovery, greencough risk, "feed the vulnerable"
+  (compassion) and old cats' hunting (`FrailHuntingMultiplier`). Ranks only
+  count for the warrior code's eating order.
+- **Medicine cats** (main PC, `5be9644`): eat next to the leader, care for
+  themselves, two healers wanted, desperation after 6 moons without one.
+- Earlier: sickness, injuries, medicine den, herbs, soft birth brake, gifts and
+  mentors (see git log and `docs/Milestone1.md`).
 
-The user's design decisions for this feature are in the last section.
+Last test (100 seeds × 30 years, Balanced leader, after step 1): 6 of 100
+Clans died out, ~5 kits and ~2 elders starve per year, ~2 sickness deaths per
+run.
 
-## Test results (100 seeds × 30 years, Balanced leader)
+## Skill overhaul: next steps
 
-| Version                         | Died out | Starved/year | Sickness deaths/run |
-|---------------------------------|----------|--------------|---------------------|
-| Gifts & mentors, no sickness    | 20       | ~1.3         | –                   |
-| Sickness, no medicine cat       | 6–8      | ~3           | ~70                 |
-| Medicine cats, hard birth brake | 50–59    | ~2.5         | 1–14                |
-| **Now** (soft brake 0.2)        | **12**   | **~7**       | **~2**              |
-| Soft brake 0.3                  | 4        | ~11          | ~2                  |
-| Soft brake 0.15                 | 16       | ~5           | ~1.5                |
+One step at a time, a 100-seed test after each, commit when the user agrees.
 
-## TODO for the next agent
+2. **Learning by doing (next).** Hunting practice **only per caught mouse**
+   (user's choice). Same curve via `Skill.Improve`. Risk: the leader sends the
+   best hunters first, so they get even better. Monitor whether a few hunters
+   carry the Clan. Measure how top hunters develop over their life: the gap
+   between weak and strong should grow again (the curve narrowed it).
+3. **Use it or lose it.** Skills decay without practice, but only **down to a
+   floor** (e.g. half the best level the cat ever had). **Not for apprentices
+   in training** (training counts as practice), otherwise a weak learner could
+   never reach the ceremony minimum.
+4. **Minimum skill for the warrior ceremony** (40 or 50, tunable). Apprentices
+   **stay apprentices until good enough**, no exception. User: "the minimum
+   must be achievable by any cat". Counterweight: a **motivation bonus** for
+   apprentices past the warrior age (e.g. +15% learning per extra moon,
+   `MotivationPerMoon`, plus a log line like "Ravenpaw trains harder than
+   ever"). The user doesn't want to tune around a target length: test first
+   and see whether anyone gets close to a long apprenticeship. Measure the age
+   at the ceremony (average, max) and how many cats reach 90+/95+ per skill.
 
-In order of priority:
+**Open question for the user:** "the mentor will learn a lot while having an
+apprentice": should mentoring become a skill learned by teaching (replacing
+`MentoringGift` + `MoonsMentored`)? Likely yes, confirm first.
 
-1. **The user has to push from the laptop first.** `git push origin master`
-   failed there because the saved GitHub login was invalid. Without the push,
-   the main PC doesn't have these commits.
-2. **Commit the `.uid` files.** Godot creates them when it opens the project,
-   for `Condition.cs`, `Den.cs`, `Herb.cs`, `World.Health.cs` and
-   `World.Medicine.cs`.
-3. **Medicine is too strong.** Sickness kills only ~2 cats per run, and
-   catmint runs out ~12 times per run with almost no deaths. Goal: with a good
-   medicine cat and catmint, few die; a greencough outbreak in leaf-bare
-   without catmint kills several kits and elders.
-   - The den isolates too well. Sick cats move in at severity 20, often
-     before they've spread anything. Ideas: contagious earlier, medicine cats
-     catch it from patients and spread it, or a weaker isolation.
-   - Make catmint run out for real in bad winters. Maybe lower
-     `CatmintLeafBareMultiplier`, or let herb stocks spoil faster.
-   - Later: the medicine cat stocks up in leaf-fall (a personality decision).
-4. **Update `docs/Milestone1.md` and `docs/Vision.md`** for everything in
-   point 3 of the summary and for the soft brake. The rule descriptions there
-   end with gifts and mentors. The comments in `Tuning.cs` hold the reasoning
-   for most values.
-5. **Check starvation (~7 cats per year, ~3 of them kits).** The user chose
-   "hunger decides" over a managed birth rule, but the amount should feel
-   right. `MinCrowdingFactor` is the main lever. With the Balanced leader, weak
-   warriors are fed after apprentices and elders, so they starve too.
-6. **Medicine cat apprentices die often** (~8 apprentices per run for 2–3
-   medicine cats). Find out why (starvation?) and whether it's wanted.
-7. **Healing skill reaches 100 quickly** through practice
-   (`HealingPracticePerCare`). Maybe slow it down.
-8. **UI (the user does UI themselves, don't change it unasked).** Useful
-   properties:
-   - `Cat`: `Conditions` (each has `Name`, `Severity`, `Recovery`, `Type`),
-     `IsSick`, `IsConfined`, `InMedicineDen`, `Skills` (e.g.
-     `cat.Skills[SkillType.Hunting].Level` and `.Gift`), `MentoringGift`,
-     `Mentor`, `MoonsMentored`
-   - `Clan.HerbStore.Doses(herb)`
-9. **Later ideas the user wants:**
-   - warriors becoming medicine cats (like Cinderpelt)
-   - remembering every apprentice a cat trained ("I trained him")
-   - the warrior code rule that a deputy must have had an apprentice
-   - loners and kittypets joining for new blood (small Clans run out of
-     possible mates)
+After step 4: update the training rules in `docs/Milestone1.md` (they still
+describe integer skills and "parts of a point are kept").
+
+## Other TODOs (priority order)
+
+1. **Medicine is too strong.** Sickness kills only ~2 cats per run, catmint
+   runs out ~12 times per run with almost no deaths. Goal: few deaths with a
+   good medicine cat and catmint; a leaf-bare greencough outbreak without
+   catmint kills several kits and elders. Ideas: the den isolates too well
+   (cats move in at severity 20 before spreading much), medicine cats could
+   catch it from patients, catmint rarer (`CatmintLeafBareMultiplier`).
+2. **Balance runner into the repo** (`tools/BalanceRunner/`). The 100-seed
+   test program only exists in a scratchpad on the laptop. Put it in the repo
+   with written-down targets (e.g. at most 15/100 died out, at most 8 starved
+   per year). See "How to test".
+3. **Rule tests for the feeding order**, one per leader style, as design
+   statements ("a compassionate leader feeds a young kit before a healthy
+   warrior"). Assert relations, not exact scores. The user reviews the code
+   first and decides which statements are true.
+4. **Update `Milestone1.md` / `Vision.md`** for sickness, medicine cats, herbs,
+   the medicine den and the soft birth brake. `Tuning.cs` comments hold the
+   reasoning for most values.
+5. **Check starvation** (~7 per year). `MinCrowdingFactor` is the main lever.
+6. **Later, an explorer** that prints the feeding order with each score part
+   (needs `FeedingPolicy.Score` to return its parts) and can sweep a weight.
+7. **UI is the user's area, don't change it unasked** (only minimal fixes when
+   a refactor breaks the build). Useful properties: `cat.Skills`,
+   `cat.Conditions`, `IsSick`, `IsConfined`, `InMedicineDen`, `Mentor`,
+   `MentoringGift`, `MoonsMentored`, `Clan.HerbStore.Doses(herb)`.
+8. **Later ideas the user wants:** warriors becoming medicine cats (like
+   Cinderpelt), remembering every apprentice a cat trained, the rule that a
+   deputy must have had an apprentice, loners and kittypets joining for new
+   blood, "volunteer work" (warriors hunting for sport, practicing skills).
 
 ## How to test
 
-Build a console project outside the repo that compiles
-`scripts/Simulation/**/*.cs`. The simulation has no Godot dependency. Count
-these from the log callback (summary lines, except where noted):
+- **Unit tests:** `dotnet test tests/WarriorsSim.Tests`.
+- **Balance runs:** a console project that compiles
+  `scripts/Simulation/**/*.cs` and runs 100 seeds × 30 years (~3 minutes, run
+  in the background). Count from the log callback: Clans dying out, deaths by
+  cause (`starved to death`, `died of …`, skipping the moon summary lines),
+  greencough cases (`caught greencough`, `turned into greencough`), the
+  hunting skill of new warriors (`(hunting N` in the ceremony line). 10 seeds
+  are too noisy (±4 die-outs per 100 is normal).
+- **Pure refactors:** save the full log (every level) of a few seeds before
+  the change and compare it byte by byte afterwards. Same seed must give the
+  same log.
+- Ask before many long runs when the user is on battery.
 
-- Clans dying out
-- deaths by cause: lines with `starved to death` and `died of …` (skip the
-  moon summary lines, which also contain "died of")
-- greencough cases: `caught greencough` and `turned into greencough`
-- whitecough cases: `caught whitecough` (detail level)
-- the hunting skill of new warriors, from `(hunting N` in the warrior ceremony
-  line
+## Design decisions by the user
 
-Use 100 seeds × 30 years for balance decisions. One run takes ~3 minutes, and
-10 seeds are too noisy (±4 die-outs per 100 is normal noise). Ask before many
-long runs when the user is on battery.
-
-## Design decisions by the user (sickness and medicine)
-
-- Named sicknesses from the books, contagious within dens.
-- Hunting injuries for now. One severity per injury, health per limb comes
-  later.
-- The medicine cat is its own career, like the books.
-- Healing gift: **rare**. The kit with the best gift becomes apprentice when
-  the Clan needs one.
-- Warriors can learn some healing, especially cats often in the medicine den.
-  Without a medicine cat, the best of them gives basic care.
-- Herb store with seasons. Medicine den with limited nests, sickest first.
-- Population: **soft brake, hunger decides**.
-- Balance doesn't have to be perfect before committing. It can't be balanced
-  to perfection yet, so commit working steps.
-- **Medicine cats rank next to the leader** in the warrior code's eating order
-  (spiritual leaders, save the most lives). Their apprentice comes right after
-  them.
-- **Healers care for themselves.** A medicine cat too sick to get up instructs
-  another cat, who cares with a bonus from the instructions
-  (`Tuning.InstructedHealingShare`).
-- **Two healers whenever possible** (`Tuning.TargetHealers`), but never more
-  than one apprentice. The apprentice is chosen at a kit's apprentice
-  ceremony as soon as the Clan has fewer than two healers, so Cinderkit
-  becomes Spottedleaf's apprentice.
-- **Desperation:** after `Tuning.MoonsUntilDesperateForHealer` moons without a
-  medicine cat, the Clan takes its most promising kit at the next apprentice
-  ceremony, however small the gift. Not a warrior.
-
-## Update from the main PC (2026-10-27)
-
-- Done: the push worked, medicine order, self-care and instructed helpers
-  (this also fixed a bug where a sick healer dropped out of the patient
-  queue), two healers, desperation.
-- 100 seeds × 30 years after these changes: 12 died out, ~7.3 starved/year,
-  ~1.7 sickness deaths/run. Two healers in 86% of all moons, one in 13%.
-- TODO 6 solved: in famines, most leaders feed the hunters first, and an
-  apprentice's skill is still low. Now the feeding policy judges apprentices
-  (warrior and medicine cat) by their gift or their skill, whichever is
-  higher. Medicine cat apprentices starve 7 times in 100 runs instead of ~280.
-- 100 seeds × 30 years after all changes: 9 died out, ~7.7 starved/year,
-  ~2.1 sickness deaths/run.
-- `SeekMedicineApprenticeAgeMoons` was replaced by `TargetHealers`.
+- Sickness: named sicknesses from the books, contagious within dens. Hunting
+  injuries, one severity each (health per limb later).
+- Medicine cat is its own career. Healing gift is rare. Warriors learn some
+  healing as patients. Medicine cats eat next to the leader, care for
+  themselves, two healers whenever possible, never more than one apprentice.
+- Population: soft birth brake, hunger decides.
+- Frailty depends on age, not rank. Compassion protects the truly weak
+  (queens, the sick, the frail); ranks are only for the warrior code. Old cats
+  hunt worse but mentor as well as before.
+- Skills: floats, every level harder, but 90+ must be reachable for the very
+  best. Learning by doing per caught mouse. Decay down to a floor.
+  Apprentices stay apprentices until they reach the minimum, which every cat
+  must be able to reach.
+- Balance doesn't have to be perfect before committing; commit working steps.
