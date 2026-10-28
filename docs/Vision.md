@@ -322,18 +322,16 @@ Still to decide **[Open]**:
 
 **Tools**
 
-- Simulation UI in Godot (`scenes/Simulation_UI.tscn`), the main scene,
-  with three tabs:
+- Simulation UI in Godot (`ui/simulation_ui/simulation_ui.tscn`), the main
+  scene, with three tabs:
   - **Clan:** list of all cats, and a form to add cats before or during a
     run
   - **Tuning:** every balancing value, editable, changed values highlighted,
     reset to defaults
   - **Simulation:** start/restart, play/pause, speeds, Clan overview and the
     log (summary only or with details)
-- An older dashboard built in code (`scenes/dashboard.tscn`) with bars for
-  every cat
 - Full log in `logs/simulation.log`
-- All balancing values in `scripts/Simulation/Tuning.cs`, the rules in
+- All balancing values in `scripts/Simulation/Core/Tuning.cs`, the rules in
   `docs/Milestone1.md`
 
 ### Lessons from balancing

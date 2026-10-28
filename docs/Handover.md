@@ -103,7 +103,7 @@ In order of priority:
 ## How to test
 
 Build a console project outside the repo that compiles
-`scripts/Simulation/*.cs`. The simulation has no Godot dependency. Count
+`scripts/Simulation/**/*.cs`. The simulation has no Godot dependency. Count
 these from the log callback (summary lines, except where noted):
 
 - Clans dying out

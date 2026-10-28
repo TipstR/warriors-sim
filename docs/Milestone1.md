@@ -4,7 +4,7 @@ The rules of the simulation as they are in the code right now. They started
 as a small plan (10 cats, 30 days) and grew while balancing. Everything here
 is still a starting point and will change.
 
-All numbers live in `scripts/Simulation/Tuning.cs` and can be changed in the
+All numbers live in `scripts/Simulation/Core/Tuning.cs` and can be changed in the
 Tuning tab of the simulation UI. The numbers below are the defaults. If this
 document and `Tuning.cs` disagree, `Tuning.cs` is right.
 
@@ -266,7 +266,7 @@ great mentors.
 ## Technical decisions
 
 - The simulation is **plain C#** with no Godot code in it. The simulation UI
-  (`scenes/Simulation_UI.tscn`) starts it, shows it and writes the full log
+  (`ui/simulation_ui/simulation_ui.tscn`) starts it, shows it and writes the full log
   to `logs/simulation.log`.
 - Randomness uses a **fixed seed** (default 12345), so the same seed always
   gives the same run.

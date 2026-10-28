@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bdk7afhyv7xsg"]
 
-[ext_resource type="Script" uid="uid://1defver1kf2w" path="res://scripts/UI/SimulationUi.cs" id="1_simui"]
+[ext_resource type="Script" uid="uid://1defver1kf2w" path="res://ui/simulation_ui/SimulationUi.cs" id="1_simui"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_speeds"]
 

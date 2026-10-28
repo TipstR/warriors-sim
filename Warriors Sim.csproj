@@ -9,8 +9,9 @@
   <ItemGroup>
     <None Include="project.godot" />
     <None Include="docs\**\*" />
-    <None Include="scenes\**\*" />
     <None Include="assets\**\*" />
     <None Include="scripts\**\*.uid" />
+    <None Include="ui\**\*.tscn" />
+    <None Include="ui\**\*.uid" />
   </ItemGroup>
 </Project>

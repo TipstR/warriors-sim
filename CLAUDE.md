@@ -33,21 +33,29 @@ medicine cats are newer than the other docs).
 
 ## Project structure
 
+The simulation (pure C#, no scenes) is sorted by topic. The Godot part is
+sorted by feature: a scene, its script and its assets live together in one
+folder, files in snake_case except C# scripts (named like their class).
+Namespaces don't follow folders: all simulation code is `WarriorsSim.Simulation`.
+When moving a script, move its `.uid` file with it.
+
 - `scripts/Simulation/` – the simulation, plain C# without Godot code.
-  - `World.cs` runs everything tick by tick (4 ticks per day). It is a
-    partial class split by topic: `World.Health.cs` (sickness, injuries),
-    `World.Medicine.cs` (medicine cats, care, medicine den, herbs).
-  - `Condition.cs` (a sickness or injury), `Den.cs`, `Herb.cs` (herb store).
-  - `Tuning.cs` holds all balancing values as static fields with
-    `[TuningGroup]`. `TuningSettings.cs` lists and resets them.
-  - `Cat.cs`, `Clan.cs`, `FeedingPolicy.cs` (leader styles),
-    `StartingClans.cs` (ThunderClan from *Into the Wild*), `CatNames.cs`.
-- `scripts/UI/` – Godot scripts.
-  - `SimulationUi.cs` + `scenes/Simulation_UI.tscn`: the dev tool and main
-    scene (tabs: Clan, Tuning, Simulation). The user built the layout in the
-    editor, the code finds nodes by unique name (`%Name`).
-  - `Dashboard.cs` + `scenes/dashboard.tscn`: an older dashboard built in code.
-- `docs/` – vision, milestone rules, the user's own notes.
+  - `Core/`: `World.cs` runs everything tick by tick (4 ticks per day). It is a
+    partial class split by topic (`Health/World.Health.cs`,
+    `Health/World.Medicine.cs`). `Tuning.cs` holds all balancing values as
+    static fields with `[TuningGroup]`, `TuningSettings.cs` lists and resets
+    them. Also `TimeOfDay`, `Season`, `LogLevel`.
+  - `Cats/`: `Cat.cs`, `CatNames.cs`, `Rank`, `Sex`.
+  - `Clan/`: `Clan.cs`, `FreshKillPile.cs`, `FeedingPolicy.cs` (leader styles),
+    `StartingClans.cs` (ThunderClan from *Into the Wild*), `Den`.
+  - `Health/`: `Condition.cs` (a sickness or injury), `Herb.cs` (herb store),
+    sickness and medicine cats.
+- `ui/simulation_ui/` – `simulation_ui.tscn` + `SimulationUi.cs`: the dev tool
+  and main scene (tabs: Clan, Tuning, Simulation). The user built the layout
+  in the editor, the code finds nodes by unique name (`%Name`).
+- `assets/` – shared assets (later `sprites/`, `audio/`, `fonts/`). Assets that
+  belong to one feature go into that feature's folder.
+- `docs/` – vision, milestone rules, handover, the user's own notes.
 - `logs/` – simulation logs (ignored by git).
 
 ## Working rules
@@ -65,7 +73,7 @@ medicine cats are newer than the other docs).
 - **Balance changes must be tested with many random seeds and long runs**
   (100 seeds × 30 years, about 3 minutes; 10 seeds are too noisy), not with a
   single run. A small console project outside the repo that compiles
-  `scripts/Simulation/*.cs` works well for this, because the simulation has no
+  `scripts/Simulation/**/*.cs` works well for this, because the simulation has no
   Godot dependency. Run it in the background. Ask before many long runs when
   the user is on battery.
 - Godot can be started headless (`--headless --path . -s test.gd`) to check
