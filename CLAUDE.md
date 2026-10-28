@@ -55,6 +55,10 @@ When moving a script, move its `.uid` file with it.
   in the editor, the code finds nodes by unique name (`%Name`).
 - `assets/` – shared assets (later `sprites/`, `audio/`, `fonts/`). Assets that
   belong to one feature go into that feature's folder.
+- `tests/WarriorsSim.Tests/` – unit tests (xUnit). The project compiles
+  `scripts/Simulation/**/*.cs` directly, so the tests don't need Godot. Test
+  files mirror the simulation folders (e.g. `Cats/FrailtyTests.cs`). The Godot
+  project ignores `tests/` (`Compile Remove` in the `.csproj`, `.gdignore`).
 - `docs/` – vision, milestone rules, handover, the user's own notes.
 - `logs/` – simulation logs (ignored by git).
 
@@ -69,7 +73,12 @@ When moving a script, move its `.uid` file with it.
   give nodes the user needs in code a unique name. Commit `.uid` files.
 - **Code style** is set in `.editorconfig`: braces on the same line,
   4 spaces, `var` where Rider uses it. Match the surrounding code.
-- **Build:** `dotnet build` in the project folder.
+- **Build:** `dotnet build` in the project folder (builds the game and the
+  tests).
+- **Tests:** `dotnet test tests/WarriorsSim.Tests`, or the Unit Tests window in
+  Rider. `Tuning` is static and shared by all tests, so tests run one after
+  another, and every test class calls `TuningSettings.ResetToDefaults()` in its
+  constructor.
 - **Balance changes must be tested with many random seeds and long runs**
   (100 seeds × 30 years, about 3 minutes; 10 seeds are too noisy), not with a
   single run. A small console project outside the repo that compiles
