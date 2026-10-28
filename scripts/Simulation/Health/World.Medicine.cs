@@ -18,6 +18,9 @@ public partial class World {
     /// <summary>How many moons in a row the Clan has been without a full medicine cat.</summary>
     private int _moonsWithoutMedicineCat;
 
+    /// <summary>The day each missing herb was last logged, so the log says it once a day instead of every tick.</summary>
+    private readonly Dictionary<Herb, int> _herbMissingLoggedOnDay = new();
+
     /// <summary>
     ///     Like the other gifts, half of the healing gift comes from the parents. But the luck part is rare
     ///     (see <see cref="Tuning.HealingGiftRarity" />), so most kits have little gift for healing.
@@ -192,8 +195,9 @@ public partial class World {
     }
 
     /// <summary>
-    ///     The cats who care for the sick this tick and how well, best first. Medicine cats who are too sick to get up
-    ///     care for themselves right away and pass their place on to an instructed helper.
+    ///     The cats who care for the sick this tick and how well, best first. A sick healer cares for itself right
+    ///     away, so it isn't left out when the other patients keep it busy. Medicine cats who are too sick to get up
+    ///     pass their place on to an instructed helper.
     /// </summary>
     private List<(Cat Cat, float Skill)> ChooseCaregivers() {
         var caregivers = new List<(Cat Cat, float Skill)>();
@@ -203,14 +207,15 @@ public partial class World {
             .ToList();
 
         foreach (var healer in medicineCats) {
+            if (healer.IsSick)
+                Care(healer, healer, healer.Healing);
+
             if (!healer.IsConfined) {
                 caregivers.Add((healer, healer.Healing));
                 continue;
             }
 
-            // Too sick to get up: it still knows what to do for itself, and tells another cat what to do for the others
-            Care(healer, healer, healer.Healing);
-
+            // Too sick to get up: it tells another cat what to do for the others
             var helper = Clan.Cats
                 .Where(c => !c.IsMedicineCat && c.Rank != Rank.Kit && !c.IsSick && caregivers.All(g => g.Cat != c))
                 .OrderByDescending(c => c.Healing)
@@ -228,8 +233,11 @@ public partial class World {
                 .Where(c => c.Rank != Rank.Kit && !c.IsConfined && c.Healing >= Tuning.MinHealingToCare)
                 .OrderByDescending(c => c.Healing)
                 .FirstOrDefault();
-            if (bestHealer != null)
+            if (bestHealer != null) {
+                if (bestHealer.IsSick)
+                    Care(bestHealer, bestHealer, bestHealer.Healing);
                 caregivers.Add((bestHealer, bestHealer.Healing));
+            }
         }
 
         return caregivers.OrderByDescending(c => c.Skill).ToList();
@@ -242,7 +250,7 @@ public partial class World {
     /// </summary>
     private void Care(Cat caregiver, Cat patient, float skill) {
         _careSkill[patient] = skill;
-        GiveHerbs(patient);
+        GiveHerbs(caregiver, patient);
 
         var caregiverCap = caregiver.IsMedicineCat ? Tuning.SkillMax : caregiver.HealingGift;
         caregiver.ImproveHealing(Tuning.HealingPracticePerCare * caregiver.HealingLearningFactor, caregiverCap);
@@ -289,22 +297,27 @@ public partial class World {
 
     /// <summary>
     ///     Gives the patient one dose of the right herb for each of its conditions, once a day, while the store has
-    ///     some. Conditions that are already healing don't need herbs anymore.
+    ///     some. Conditions that are already healing don't need herbs anymore. The healers try again every tick, in
+    ///     case someone has gathered more, but a missing herb is only logged once a day.
     /// </summary>
-    private void GiveHerbs(Cat patient) {
+    private void GiveHerbs(Cat caregiver, Cat patient) {
         foreach (var condition in patient.Conditions) {
             if (condition.IsHealing || condition.HerbGivenOnDay == Day)
                 continue;
 
             var herb = Tuning.HerbFor(condition.Type);
             if (!Clan.HerbStore.TryUse(herb)) {
-                Log($"There is no {HerbName(herb)} left for {patient.Name}'s {condition.Name}.");
+                if (_herbMissingLoggedOnDay.GetValueOrDefault(herb) != Day) {
+                    _herbMissingLoggedOnDay[herb] = Day;
+                    Log($"There is no {HerbName(herb)} left for {patient.Name}'s {condition.Name}.");
+                }
+
                 continue;
             }
 
             condition.HerbGivenOnDay = Day;
             if (Clan.HerbStore.Doses(herb) < 1f)
-                Log($"The medicine cat has used the last {HerbName(herb)}.", LogLevel.Summary);
+                Log($"{caregiver.Name} has used the last {HerbName(herb)}.", LogLevel.Summary);
         }
     }
 

@@ -55,6 +55,18 @@ public static class Tuning {
     /// <summary>The chance to die of old age doubles every this many moons.</summary>
     [TuningGroup("Aging")] public static int OldAgeDeathChanceDoublingMoons = 18;
 
+    /// <summary>
+    ///     A newborn kit is fully frail (see <see cref="Cat.Frailty" />) and gets sturdier every moon, until it isn't
+    ///     frail at all at this age. With 6, a kit of 3 moons has frailty 0.5.
+    /// </summary>
+    [TuningGroup("Aging")] public static int KitFrailtyEndsMoons = 6;
+
+    /// <summary>
+    ///     From <see cref="OldAgeStartMoons" /> on, cats get frailer again, until they are fully frail at this age.
+    ///     With 96 and 180, a cat of 120 moons has frailty 0.29, one of 150 moons 0.64.
+    /// </summary>
+    [TuningGroup("Aging")] public static int FullyFrailAgeMoons = 180;
+
     // Gifts
     /// <summary>
     ///     How much of a kit's gift comes from its parents (the average of both). The rest is luck.
@@ -132,8 +144,9 @@ public static class Tuning {
 
     /// <summary>
     ///     Patients in the medicine den rest and recover this much faster (0.1 = 10% faster), on top of care.
-    ///     Keep it small: the den's main use is keeping the sick away from the others. Together with care, a kit or
-    ///     elder with greencough still dies about one time in three when there's no catmint.
+    ///     Keep it small: the den's main use is keeping the sick away from the others. With a nest and care from a
+    ///     healer with healing 60, but no catmint, about 1 in 3 kits of 3 moons (frailty 0.5) with greencough still
+    ///     die, and almost every fully frail cat.
     /// </summary>
     [TuningGroup("Medicine")] public static float MedicineDenRecoveryBonus = 0.1f;
 
@@ -142,8 +155,9 @@ public static class Tuning {
 
     /// <summary>
     ///     How much care speeds up recovery: a cat cared for by a healer with healing 100 recovers this much faster
-    ///     (0.25 = 25% faster), with healing 50 half as much. Care alone doesn't save most kits and elders from
-    ///     greencough, the right herb does (catmint).
+    ///     (0.25 = 25% faster), with healing 50 half as much. Healers only care during the day. Care alone saves only
+    ///     a few frail cats from greencough: with a healer of healing 60, a kit of 3 moons dies about half the time
+    ///     instead of two times in three. The right herb (catmint) saves almost all of them.
     /// </summary>
     [TuningGroup("Medicine")] public static float CareRecoveryBonus = 0.25f;
 
@@ -283,24 +297,6 @@ public static class Tuning {
         (12, 1f)
     };
 
-    /// <summary>
-    ///     How frail a cat is at each age, from 0 (sturdy) to 1 (very frail). Ages in between are interpolated.
-    ///     Frail cats survive hunger and sickness worse, see <see cref="FrailStarvationMultiplier" />,
-    ///     <see cref="FrailRecoveryMultiplier" /> and <see cref="WeakGreencoughMultiplier" />.
-    ///     A newborn kit is very frail and gets sturdier with every moon. From <see cref="OldAgeStartMoons" /> on,
-    ///     frailty grows again: a newly retired warrior is a bit frail, a very old cat very frail.
-    /// </summary>
-    public static readonly (int AgeMoons, float Frailty)[] FrailtyByAge = {
-        (0, 1f),
-        (1, 0.7f),
-        (3, 0.35f),
-        (6, 0f),
-        (96, 0f),
-        (120, 0.35f),
-        (150, 0.7f),
-        (180, 1f)
-    };
-
     // Starvation
     /// <summary>
     ///     Every tick a starving cat doesn't eat adds a stack, every meal removes one.
@@ -318,8 +314,8 @@ public static class Tuning {
     [TuningGroup("Starvation")] public static float StarvationDeathChancePerStack = 0.01f;
 
     /// <summary>
-    ///     A fully frail cat's chance to die of starvation is multiplied by this (see <see cref="FrailtyByAge" />).
-    ///     Less frail cats get a part of it: with 3, a kit of 3 moons (frailty 0.35) gets × 1.7.
+    ///     A fully frail cat's chance to die of starvation is multiplied by this (see <see cref="Cat.Frailty" />).
+    ///     Less frail cats get a part of it: with 3, a kit of 3 moons (frailty 0.5) gets × 2.
     /// </summary>
     [TuningGroup("Starvation")] public static float FrailStarvationMultiplier = 3f;
 
@@ -389,7 +385,7 @@ public static class Tuning {
 
     /// <summary>
     ///     Fully frail cats and cats weak from hunger with whitecough get greencough this much more often.
-    ///     Less frail cats get a part of it, see <see cref="FrailtyByAge" />.
+    ///     Less frail cats get a part of it, see <see cref="Cat.Frailty" />.
     /// </summary>
     [TuningGroup("Sickness")] public static float WeakGreencoughMultiplier = 3f;
 
@@ -403,9 +399,9 @@ public static class Tuning {
     ///     worst is over after about a week.
     ///     Whether a cat dies depends on recovery against severity: a cat dies if its case gets worse faster than
     ///     recovery / severity (times its recovery multiplier). Without care, greencough (10.5 / 9 = 1.17) kills
-    ///     about 1 in 5 healthy adults. With <see cref="FrailRecoveryMultiplier" /> 0.55: about half of the cats
-    ///     with frailty 0.35 (a kit of 3 moons, a newly retired elder), 5 in 6 with frailty 0.7 and every fully frail
-    ///     cat. The medicine cat lowers this.
+    ///     about 1 in 5 healthy adults. With <see cref="FrailRecoveryMultiplier" /> 0.55: about half of the cats of
+    ///     120 moons (frailty 0.29), two in three with frailty 0.5 (a kit of 3 moons) and every fully frail cat.
+    ///     Care, the medicine den and catmint lower this.
     /// </summary>
     [TuningGroup("Sickness")] public static float WhitecoughRecoveryPerDay = 15f;
 
@@ -421,8 +417,8 @@ public static class Tuning {
     [TuningGroup("Sickness")] public static float CaseSpeedVariation = 0.3f;
 
     /// <summary>
-    ///     A fully frail cat fights sickness worse: its recovery is multiplied by this (see <see cref="FrailtyByAge" />).
-    ///     Less frail cats get a part of it: with 0.55, a cat with frailty 0.35 recovers × 0.84.
+    ///     A fully frail cat fights sickness worse: its recovery is multiplied by this (see <see cref="Cat.Frailty" />).
+    ///     Less frail cats get a part of it: with 0.55, a cat with frailty 0.5 recovers × 0.78.
     /// </summary>
     [TuningGroup("Sickness")] public static float FrailRecoveryMultiplier = 0.55f;
 

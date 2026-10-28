@@ -134,8 +134,9 @@ public partial class World {
         var name = Condition.NameOf(type);
         var from = source != null ? $" from {source.Name}" : "";
 
-        // Greencough takes the place of whitecough
-        var whitecough = cat.Conditions.FirstOrDefault(c => c.Type == ConditionType.Whitecough);
+        // Greencough takes the place of a whitecough the cat is still fighting. A whitecough that is already healing
+        // stays, and the greencough starts fresh next to it.
+        var whitecough = cat.Conditions.FirstOrDefault(c => c.Type == ConditionType.Whitecough && !c.IsHealing);
         if (type == ConditionType.Greencough && whitecough != null)
             cat.ReplaceCondition(whitecough, Worsen(whitecough));
         else
@@ -159,9 +160,11 @@ public partial class World {
             if (whitecough == null)
                 continue;
 
-            // From 0 (sturdy) to 1: a cat weak from hunger counts as fully weak
-            var weakness = cat.IsWeakFromHunger ? 1f : cat.Frailty;
-            var chance = seasonChance * (1f + (Tuning.WeakGreencoughMultiplier - 1f) * weakness);
+            // A cat weak from hunger counts as fully frail here
+            var weakness = cat.IsWeakFromHunger
+                ? Tuning.WeakGreencoughMultiplier
+                : cat.FrailtyMultiplier(Tuning.WeakGreencoughMultiplier);
+            var chance = seasonChance * weakness;
             if (_random.NextDouble() >= chance)
                 continue;
 
@@ -215,7 +218,7 @@ public partial class World {
     /// </summary>
     private float RecoveryMultiplier(Cat cat) {
         var multiplier = CareFactor(cat) * MedicineDenFactor(cat);
-        multiplier *= 1f - (1f - Tuning.FrailRecoveryMultiplier) * cat.Frailty;
+        multiplier *= cat.FrailtyMultiplier(Tuning.FrailRecoveryMultiplier);
         if (cat.IsWeakFromHunger)
             multiplier *= Tuning.StarvingRecoveryMultiplier;
         return multiplier;

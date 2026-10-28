@@ -184,7 +184,7 @@ public class Cat {
 
             var chance = Math.Max(0, StarvationStacks - Tuning.StarvationSafeStacks)
                          * Tuning.StarvationDeathChancePerStack;
-            chance *= 1f + (Tuning.FrailStarvationMultiplier - 1f) * Frailty;
+            chance *= FrailtyMultiplier(Tuning.FrailStarvationMultiplier);
             return Math.Min(1f, chance);
         }
     }
@@ -197,10 +197,26 @@ public class Cat {
 
     /// <summary>
     ///     How badly the cat survives hunger and sickness because of its age, from 0 (sturdy) to 1 (very frail).
-    ///     Depends only on age, not rank: a newborn kit is frailer than one about to become an apprentice, and a
-    ///     newly retired warrior is less frail than a very old cat. Read from <see cref="Tuning.FrailtyByAge" />.
+    ///     Depends only on age, not rank. A newborn kit is fully frail and gets sturdier every moon until
+    ///     <see cref="Tuning.KitFrailtyEndsMoons" />. From <see cref="Tuning.OldAgeStartMoons" /> on, the cat gets
+    ///     frailer again, until it is fully frail at <see cref="Tuning.FullyFrailAgeMoons" />.
     /// </summary>
-    public float Frailty => Interpolate(Tuning.FrailtyByAge, AgeMoons);
+    public float Frailty {
+        get {
+            var asKit = 1f - (float)AgeMoons / Math.Max(1, Tuning.KitFrailtyEndsMoons);
+            var oldAgeSpan = Math.Max(1, Tuning.FullyFrailAgeMoons - Tuning.OldAgeStartMoons);
+            var asOldCat = (float)(AgeMoons - Tuning.OldAgeStartMoons) / oldAgeSpan;
+            return Math.Clamp(Math.Max(asKit, asOldCat), 0f, 1f);
+        }
+    }
+
+    /// <summary>
+    ///     Scales a penalty by frailty: 1 (no effect) for a sturdy cat, <paramref name="fullyFrail" /> for a fully
+    ///     frail cat, and in between for the rest. E.g. with 3, a cat with frailty 0.5 gets × 2.
+    /// </summary>
+    public float FrailtyMultiplier(float fullyFrail) {
+        return 1f + (fullyFrail - 1f) * Frailty;
+    }
 
     public bool CanHunt =>
         Rank is Rank.Apprentice or Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery && !IsResting;
