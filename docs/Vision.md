@@ -4,7 +4,7 @@ A summary of everything decided or discussed about the game so far.
 
 Every point is marked with how settled it is:
 
-- **[Decided]** – you said so explicitly
+- **[Decided]** – you said so explicitly, but everything is subject to change
 - **[Proposed]** – suggested during planning and put into the notes, but not
   explicitly confirmed by you yet
 - **[Open]** – not decided yet
@@ -303,7 +303,8 @@ Still to decide **[Open]**:
   prey the territory has left today
 - Fresh-kill pile with the feeding policy (see 6.4)
 - Starvation: stacks lower max energy, death becomes a growing risk above 8
-  stacks (twice as high for kits and elders), certain at 20
+  stacks (higher for young and old cats, by age: a newborn kit or a very
+  old cat up to three times as high), certain at 20
 - Famine: starts when several cats are starving and only ends after three
   calmer days. Hunters are fed first, elders and queens help hunting
 

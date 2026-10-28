@@ -122,7 +122,15 @@ The default is **Balanced**.
 - Up to **8 stacks**, starving can't kill a cat. Every stack above that adds
   **1% chance per tick** to die (e.g. 14 stacks = 6%). At **20 stacks**
   (5 days without food) the cat always dies.
-- Kits and elders are frail: their chance to die is **doubled**.
+- Young and old cats are **frail**, and their chance to die is higher, up to
+  **× 3** for a fully frail cat. Frailty depends only on age, not rank:
+
+| Age (moons) | 0 | 1   | 3    | 6–96 | 120  | 150 | 180+ |
+|-------------|---|-----|------|------|------|-----|------|
+| Frailty     | 1 | 0.7 | 0.35 | 0    | 0.35 | 0.7 | 1    |
+
+  A cat with frailty 0.35 gets × 1.7. Frailty also makes sickness worse (see
+  `Tuning.FrailRecoveryMultiplier`).
 - This way not every starving cat dies at the same moment.
 
 ### Famine

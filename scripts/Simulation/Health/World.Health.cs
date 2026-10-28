@@ -148,7 +148,7 @@ public partial class World {
 
     /// <summary>
     ///     Whitecough can turn into greencough, especially in the cold seasons and in weak cats
-    ///     (kits, elders, cats weak from hunger). Not once the cat is getting better.
+    ///     (frail because of their age, or weak from hunger). Not once the cat is getting better.
     /// </summary>
     private void WorsenWhitecough() {
         var seasonChance = Tuning.GreencoughFromWhitecoughPerDay * Tuning.SeasonSicknessMultiplier(Season)
@@ -159,8 +159,9 @@ public partial class World {
             if (whitecough == null)
                 continue;
 
-            var weak = cat.IsFrail || cat.IsWeakFromHunger;
-            var chance = seasonChance * (weak ? Tuning.WeakGreencoughMultiplier : 1f);
+            // From 0 (sturdy) to 1: a cat weak from hunger counts as fully weak
+            var weakness = cat.IsWeakFromHunger ? 1f : cat.Frailty;
+            var chance = seasonChance * (1f + (Tuning.WeakGreencoughMultiplier - 1f) * weakness);
             if (_random.NextDouble() >= chance)
                 continue;
 
@@ -214,8 +215,7 @@ public partial class World {
     /// </summary>
     private float RecoveryMultiplier(Cat cat) {
         var multiplier = CareFactor(cat) * MedicineDenFactor(cat);
-        if (cat.IsFrail)
-            multiplier *= Tuning.FrailRecoveryMultiplier;
+        multiplier *= 1f - (1f - Tuning.FrailRecoveryMultiplier) * cat.Frailty;
         if (cat.IsWeakFromHunger)
             multiplier *= Tuning.StarvingRecoveryMultiplier;
         return multiplier;

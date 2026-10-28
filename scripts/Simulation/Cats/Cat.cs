@@ -184,8 +184,7 @@ public class Cat {
 
             var chance = Math.Max(0, StarvationStacks - Tuning.StarvationSafeStacks)
                          * Tuning.StarvationDeathChancePerStack;
-            if (IsFrail)
-                chance *= Tuning.FrailStarvationMultiplier;
+            chance *= 1f + (Tuning.FrailStarvationMultiplier - 1f) * Frailty;
             return Math.Min(1f, chance);
         }
     }
@@ -196,8 +195,12 @@ public class Cat {
     /// </summary>
     public bool IsWeakFromHunger => StarvationStacks >= Tuning.FamineMinStacks;
 
-    /// <summary>Kits and elders survive hunger and sickness worse.</summary>
-    public bool IsFrail => Rank is Rank.Kit or Rank.Elder;
+    /// <summary>
+    ///     How badly the cat survives hunger and sickness because of its age, from 0 (sturdy) to 1 (very frail).
+    ///     Depends only on age, not rank: a newborn kit is frailer than one about to become an apprentice, and a
+    ///     newly retired warrior is less frail than a very old cat. Read from <see cref="Tuning.FrailtyByAge" />.
+    /// </summary>
+    public float Frailty => Interpolate(Tuning.FrailtyByAge, AgeMoons);
 
     public bool CanHunt =>
         Rank is Rank.Apprentice or Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery && !IsResting;
@@ -270,24 +273,27 @@ public class Cat {
     }
 
     /// <summary>Read from <see cref="Tuning.FoodNeedByAge" />, interpolated between the points.</summary>
-    private float FoodNeedForAge {
-        get {
-            var points = Tuning.FoodNeedByAge;
-            if (AgeMoons <= points[0].AgeMoons)
-                return points[0].FoodNeed;
+    private float FoodNeedForAge => Interpolate(Tuning.FoodNeedByAge, AgeMoons);
 
-            for (var i = 1; i < points.Length; i++) {
-                if (AgeMoons > points[i].AgeMoons)
-                    continue;
+    /// <summary>
+    ///     Reads a value for <paramref name="ageMoons" /> from a table of (age, value) points, sorted by age.
+    ///     Ages between two points are interpolated, ages outside the table get the first or last value.
+    /// </summary>
+    private static float Interpolate((int AgeMoons, float Value)[] points, int ageMoons) {
+        if (ageMoons <= points[0].AgeMoons)
+            return points[0].Value;
 
-                var (fromAge, fromNeed) = points[i - 1];
-                var (toAge, toNeed) = points[i];
-                var t = (float)(AgeMoons - fromAge) / (toAge - fromAge);
-                return fromNeed + (toNeed - fromNeed) * t;
-            }
+        for (var i = 1; i < points.Length; i++) {
+            if (ageMoons > points[i].AgeMoons)
+                continue;
 
-            return points[^1].FoodNeed;
+            var (fromAge, fromValue) = points[i - 1];
+            var (toAge, toValue) = points[i];
+            var t = (float)(ageMoons - fromAge) / (toAge - fromAge);
+            return fromValue + (toValue - fromValue) * t;
         }
+
+        return points[^1].Value;
     }
 
     /// <summary>Chance (0 to 1) that a single hunting attempt catches a mouse.</summary>
