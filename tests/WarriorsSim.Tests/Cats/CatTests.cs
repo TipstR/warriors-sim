@@ -3,9 +3,9 @@ using Xunit;
 
 namespace WarriorsSim.Tests;
 
-public class FrailtyTests {
+public class CatTests {
     /// <summary>xUnit creates a new instance for every test, so every test starts with the default balancing values.</summary>
-    public FrailtyTests() {
+    public CatTests() {
         TuningSettings.ResetToDefaults();
     }
 
