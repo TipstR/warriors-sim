@@ -91,7 +91,7 @@ Medicine cats come later.
 |------------------|----------------------------------------------------|
 | Starving first   | bonus for cats that are starving right now         |
 | Urgency          | the more starvation stacks, the sooner a cat eats  |
-| Compassion       | kits, queens, elders (1), apprentices (0.5)        |
+| Compassion       | queens and the sick (1), others by frailty (young kits, old cats), not by rank |
 | Pragmatism       | hunters, by hunting skill                          |
 | Warrior code     | kits, queens, elders, leader, deputy, warriors, apprentices |
 | Famine priority  | added to pragmatism during a famine                |
@@ -144,8 +144,8 @@ The default is **Balanced**.
   days), so the usual hunger at night doesn't start and end a famine every
   day.
 - During a famine:
-  - elders and queens in the nursery help hunting (elders catch only
-    **60%** as well as they used to)
+  - elders and queens in the nursery help hunting (elders hunt worse
+    because they are frail, see Catch chance)
   - most leader styles feed the hunters first (famine priority)
 
 ### Hunting patrols
@@ -168,6 +168,9 @@ The default is **Balanced**.
 - **Catch chance** per attempt:
   - 10% + hunting × 0.6% + (diligence − 50) × 0.2%
   - × energy factor (S-curve, see Energy)
+  - × frailty: old cats aren't as fit anymore, whatever their rank. A fully
+    frail cat catches at **30%**, a cat of 120 moons at about 80%, one of
+    150 moons at about 55%. They still mentor as well as before.
   - × season (see Seasons)
   - × prey left in the territory today
 - **Prey limit:** the territory has about **100 mice per day** (× season).

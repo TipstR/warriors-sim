@@ -10,7 +10,10 @@ namespace WarriorsSim.Simulation;
 /// </summary>
 /// <param name="StarvingFirst">Bonus for cats that are starving right now. A high value means starving cats always eat first.</param>
 /// <param name="Urgency">Weight for how close a cat is to death (starvation stacks).</param>
-/// <param name="Compassion">Weight for protecting the weak: kits, queens, elders, apprentices.</param>
+/// <param name="Compassion">
+///     Weight for protecting the weak: queens, the sick and the frail (young kits, old cats). Goes by how weak a cat
+///     really is, not by its rank.
+/// </param>
 /// <param name="Pragmatism">Weight for feeding the cats the Clan needs to survive: the best hunters.</param>
 /// <param name="WarriorCode">Weight for the warrior code's order: kits, queens, elders, leader, deputy, warriors, apprentices.</param>
 /// <param name="FamineHunterPriority">
@@ -56,17 +59,16 @@ public record FeedingPolicy(
                + WarriorCode * WarriorCodeRank(cat);
     }
 
-    /// <summary>How much the cat needs protecting, from 0 to 1.</summary>
+    /// <summary>
+    ///     How much the cat needs protecting, from 0 to 1. This is what a compassionate leader sees: queens and sick
+    ///     cats need it most, everyone else as much as their age makes them frail. Ranks only count for the warrior
+    ///     code (see <see cref="WarriorCodeRank" />).
+    /// </summary>
     private static float Vulnerability(Cat cat) {
         if (cat.IsQueen || cat.IsSick)
             return 1f;
 
-        return cat.Rank switch {
-            Rank.Kit => 1f,
-            Rank.Elder => 1f,
-            Rank.Apprentice or Rank.MedicineCatApprentice => 0.5f,
-            _ => 0f
-        };
+        return cat.Frailty;
     }
 
     /// <summary>

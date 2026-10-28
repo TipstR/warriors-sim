@@ -183,7 +183,7 @@ will later come from personality:
 |------------------|----------------------------------------------------|
 | Starving first   | starving cats always eat first                     |
 | Urgency          | the closer to death, the sooner a cat eats         |
-| Compassion       | protects kits, queens, elders, apprentices         |
+| Compassion       | protects the truly weak: queens, the sick, the frail (by age, not rank) |
 | Pragmatism       | feeds the best hunters                             |
 | Warrior code     | kits, queens, elders, leader, deputy, warriors ... |
 | Famine priority  | in a famine, hunters are fed so the Clan can hunt  |

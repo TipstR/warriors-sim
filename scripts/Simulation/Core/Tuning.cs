@@ -337,8 +337,6 @@ public static class Tuning {
     /// </summary>
     [TuningGroup("Starvation")] public static int FamineEndTicks = 12;
 
-    /// <summary>Elders who help hunting in a famine are slower than they used to be.</summary>
-    [TuningGroup("Starvation")] public static float ElderHuntingMultiplier = 0.6f;
 
     /// <summary>Each starvation stack lowers the cat's max energy by this much.</summary>
     [TuningGroup("Starvation")] public static float MaxEnergyLossPerStarvationStack = 4f;
@@ -487,6 +485,13 @@ public static class Tuning {
     [TuningGroup("Hunting")] public static float BaseCatchChance = 0.1f;
     [TuningGroup("Hunting")] public static float CatchChancePerHuntingPoint = 0.006f;
     [TuningGroup("Hunting")] public static float CatchChancePerDiligencePoint = 0.002f;
+
+    /// <summary>
+    ///     A fully frail cat (see <see cref="Cat.Frailty" />) catches prey only this well (0.3 = 30% of its usual chance).
+    ///     Old cats lose their fitness, not their experience: they mentor as well as before. With 0.3, a cat of
+    ///     120 moons hunts at about 80%, one of 150 moons at about 55%. Elders only hunt in a famine.
+    /// </summary>
+    [TuningGroup("Hunting")] public static float FrailHuntingMultiplier = 0.3f;
 
     /// <summary>
     ///     How much prey the territory has per day, multiplied by <see cref="SeasonCatchMultiplier" />.

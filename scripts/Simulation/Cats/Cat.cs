@@ -318,8 +318,8 @@ public class Cat {
             var chance = Tuning.BaseCatchChance
                          + Hunting * Tuning.CatchChancePerHuntingPoint
                          + (Diligence - Tuning.AverageDiligence) * Tuning.CatchChancePerDiligencePoint;
-            if (Rank == Rank.Elder)
-                chance *= Tuning.ElderHuntingMultiplier;
+            // Old cats aren't as fit anymore, whatever their rank
+            chance *= FrailtyMultiplier(Tuning.FrailHuntingMultiplier);
             return Math.Clamp(chance * EnergyFactor * HealthFactor, 0f, 1f);
         }
     }
