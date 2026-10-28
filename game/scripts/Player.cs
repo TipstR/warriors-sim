@@ -48,11 +48,13 @@ public partial class Player : Area2D {
             direction = vertical + horizontal; // Falls nur eine Achse aktiv ist (z.B. nur "north" oder "east")
         }
 
-        animatedSprite2D.Play($"walk_{direction}");
+        
+        
 
         if (velocity.Length() > 0)
         {
             velocity = velocity.Normalized() * Speed;
+            animatedSprite2D.Play($"walk_{direction}");
             animatedSprite2D.Play();
         }
         else
