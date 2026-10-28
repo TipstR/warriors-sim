@@ -154,12 +154,13 @@ public partial class World {
             var prefix = CatNames.RandomKitPrefix(Clan.Cats.Select(c => c.Prefix), _random);
             var sex = _random.Next(2) == 0 ? Sex.SheCat : Sex.Tom;
             var diligence = _random.Next(Tuning.SkillMin + 20, Tuning.SkillMax - 19);
-            var huntingGift = RollGift(mother.HuntingGift, father?.HuntingGift);
+            var huntingGift = RollGift(mother.Skills[SkillType.Hunting].Gift, FathersGift(father, SkillType.Hunting));
             var mentoringGift = RollGift(mother.MentoringGift, father?.MentoringGift);
             var kit = new Cat(prefix + CatNames.KitSuffix, Rank.Kit, sex, 0, 0, diligence,
-                huntingGift, mentoringGift, mother, father) {
-                HealingGift = RollHealingGift(mother.HealingGift, father?.HealingGift)
-            };
+                huntingGift, mentoringGift, mother, father);
+            var healingGift = RollHealingGift(mother.Skills[SkillType.Healing].Gift,
+                FathersGift(father, SkillType.Healing));
+            kit.SetSkill(SkillType.Healing, 0, healingGift);
             Clan.AddCat(kit);
             kits.Add(kit);
         }
@@ -167,6 +168,11 @@ public partial class World {
         _birthsThisMoon += litterSize;
         var fatherText = father != null ? $" Their father is {father.Name}." : "";
         Log($"{mother.Name} gave birth to {litterSize} kits: {Names(kits)}.{fatherText}", LogLevel.Summary);
+    }
+
+    /// <summary>The father's gift for the skill, or null if the father is unknown.</summary>
+    private static int? FathersGift(Cat father, SkillType skill) {
+        return father?.Skills[skill].Gift;
     }
 
     /// <summary>
@@ -302,7 +308,7 @@ public partial class World {
                 var otherNames = Clan.Cats.Where(c => c != cat).Select(c => c.Name);
                 cat.ChangeRank(Rank.Warrior, CatNames.RandomWarriorSuffix(cat.Prefix, otherNames, _random));
                 var mentorText = cat.Mentor != null ? $", trained by {cat.Mentor.Name}" : "";
-                Log($"{apprenticeName} has become a warrior: {cat.Name} (hunting {cat.Hunting}{mentorText}).",
+                Log($"{apprenticeName} has become a warrior: {cat.Name} (hunting {cat.Skills[SkillType.Hunting].Level}{mentorText}).",
                     LogLevel.Summary);
             }
             else if (cat.Rank == Rank.MedicineCatApprentice && cat.AgeMoons >= Tuning.MedicineCatAgeMoons) {
@@ -322,9 +328,10 @@ public partial class World {
     private void Train(Cat apprentice) {
         var mentor = IsAbleToMentor(apprentice.Mentor) ? apprentice.Mentor : null;
         var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
-        var gain = Tuning.ApprenticeHuntingGainPerMoon * apprentice.HuntingLearningFactor * mentorFactor;
+        var hunting = apprentice.Skills[SkillType.Hunting];
+        var gain = Tuning.ApprenticeHuntingGainPerMoon * hunting.LearningFactor * mentorFactor;
 
-        apprentice.ImproveHunting(gain);
+        hunting.Improve(gain);
         mentor?.MentorOneMoon();
     }
 
@@ -358,7 +365,7 @@ public partial class World {
         var mentor = Clan.Cats
             .Where(c => c.CanMentor && Clan.ApprenticeOf(c) == null)
             .OrderByDescending(c =>
-                (float)c.Hunting / Tuning.SkillMax + c.MentoringExperience + (float)_random.NextDouble())
+                (float)c.Skills[SkillType.Hunting].Level / Tuning.SkillMax + c.MentoringExperience + (float)_random.NextDouble())
             .FirstOrDefault();
 
         if (mentor != null)
@@ -403,7 +410,7 @@ public partial class World {
     private Cat ChooseDeputy() {
         return Clan.Cats
             .Where(c => c.Rank == Rank.Warrior)
-            .OrderByDescending(c => c.Hunting)
+            .OrderByDescending(c => c.Skills[SkillType.Hunting].Level)
             .ThenByDescending(c => c.AgeMoons)
             .FirstOrDefault();
     }

@@ -76,11 +76,13 @@ public record FeedingPolicy(
     ///     Apprentices are judged by what they promise to become: their gift, or their skill if it's already higher.
     /// </summary>
     private static float Usefulness(Cat cat) {
+        var hunting = cat.Skills[SkillType.Hunting];
+        var healing = cat.Skills[SkillType.Healing];
         var value = cat.Rank switch {
-            Rank.MedicineCat => cat.Healing,
-            Rank.MedicineCatApprentice => Math.Max(cat.Healing, cat.HealingGift),
-            Rank.Apprentice => Math.Max(cat.Hunting, cat.HuntingGift),
-            _ => cat.CanHunt ? cat.Hunting : 0
+            Rank.MedicineCat => healing.Level,
+            Rank.MedicineCatApprentice => Math.Max(healing.Level, healing.Gift),
+            Rank.Apprentice => Math.Max(hunting.Level, hunting.Gift),
+            _ => cat.CanHunt ? hunting.Level : 0
         };
         return (float)value / Tuning.SkillMax;
     }

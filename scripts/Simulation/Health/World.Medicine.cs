@@ -21,6 +21,11 @@ public partial class World {
     /// <summary>The day each missing herb was last logged, so the log says it once a day instead of every tick.</summary>
     private readonly Dictionary<Herb, int> _herbMissingLoggedOnDay = new();
 
+    /// <summary>The cat's healing skill. Short for <c>cat.Skills[SkillType.Healing]</c>, which this file needs often.</summary>
+    private static Skill Healing(Cat cat) {
+        return cat.Skills[SkillType.Healing];
+    }
+
     /// <summary>
     ///     Like the other gifts, half of the healing gift comes from the parents. But the luck part is rare
     ///     (see <see cref="Tuning.HealingGiftRarity" />), so most kits have little gift for healing.
@@ -52,12 +57,12 @@ public partial class World {
         // AgeOneMoon makes the kits one moon older before their ceremony
         var bestKit = Clan.Cats
             .Where(c => c.Rank == Rank.Kit && c.AgeMoons + 1 >= Tuning.ApprenticeAgeMoons)
-            .OrderByDescending(c => c.HealingGift)
+            .OrderByDescending(c => Healing(c).Gift)
             .FirstOrDefault();
         if (bestKit == null)
             return null;
 
-        return bestKit.HealingGift >= Tuning.MedicineApprenticeMinGift || IsDesperateForHealer ? bestKit : null;
+        return Healing(bestKit).Gift >= Tuning.MedicineApprenticeMinGift || IsDesperateForHealer ? bestKit : null;
     }
 
     private bool IsDesperateForHealer => _moonsWithoutMedicineCat >= Tuning.MoonsUntilDesperateForHealer;
@@ -65,7 +70,7 @@ public partial class World {
     private void MakeMedicineApprentice(Cat kit) {
         var kitName = kit.Name;
 
-        if (kit.HealingGift < Tuning.MedicineApprenticeMinGift) {
+        if (Healing(kit).Gift < Tuning.MedicineApprenticeMinGift) {
             var leader = Clan.Leader?.Name ?? "the Clan";
             Log($"{Clan.Name} has been without a medicine cat for {_moonsWithoutMedicineCat} moons. "
                 + $"Desperate, {leader} chooses {kitName}, although the kit shows little gift for healing.",
@@ -89,7 +94,7 @@ public partial class World {
         var otherNames = Clan.Cats.Where(c => c != apprentice).Select(c => c.Name);
         apprentice.ChangeRank(Rank.MedicineCat,
             CatNames.RandomWarriorSuffix(apprentice.Prefix, otherNames, _random));
-        Log($"{apprenticeName} has become a medicine cat: {apprentice.Name} (healing {apprentice.Healing}).",
+        Log($"{apprenticeName} has become a medicine cat: {apprentice.Name} (healing {Healing(apprentice).Level}).",
             LogLevel.Summary);
     }
 
@@ -108,8 +113,8 @@ public partial class World {
         }
 
         var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
-        apprentice.ImproveHealing(
-            Tuning.MedicineApprenticeHealingGainPerMoon * apprentice.HealingLearningFactor * mentorFactor);
+        Healing(apprentice).Improve(
+            Tuning.MedicineApprenticeHealingGainPerMoon * Healing(apprentice).LearningFactor * mentorFactor);
         mentor?.MentorOneMoon();
     }
 
@@ -153,7 +158,7 @@ public partial class World {
     private Cat BestMedicineCat() {
         return Clan.Cats
             .Where(c => c.Rank == Rank.MedicineCat)
-            .OrderByDescending(c => c.Healing)
+            .OrderByDescending(c => Healing(c).Level)
             .FirstOrDefault();
     }
 
@@ -203,40 +208,40 @@ public partial class World {
         var caregivers = new List<(Cat Cat, float Skill)>();
         var medicineCats = Clan.Cats
             .Where(c => c.IsMedicineCat)
-            .OrderByDescending(c => c.Healing)
+            .OrderByDescending(c => Healing(c).Level)
             .ToList();
 
         foreach (var healer in medicineCats) {
             if (healer.IsSick)
-                Care(healer, healer, healer.Healing);
+                Care(healer, healer, Healing(healer).Level);
 
             if (!healer.IsConfined) {
-                caregivers.Add((healer, healer.Healing));
+                caregivers.Add((healer, Healing(healer).Level));
                 continue;
             }
 
             // Too sick to get up: it tells another cat what to do for the others
             var helper = Clan.Cats
                 .Where(c => !c.IsMedicineCat && c.Rank != Rank.Kit && !c.IsSick && caregivers.All(g => g.Cat != c))
-                .OrderByDescending(c => c.Healing)
-                .ThenByDescending(c => c.HealingGift)
+                .OrderByDescending(c => Healing(c).Level)
+                .ThenByDescending(c => Healing(c).Gift)
                 .FirstOrDefault();
             if (helper == null)
                 continue;
 
-            caregivers.Add((helper, Math.Max(helper.Healing, healer.Healing * Tuning.InstructedHealingShare)));
+            caregivers.Add((helper, Math.Max(Healing(helper).Level, Healing(healer).Level * Tuning.InstructedHealingShare)));
             Log($"{healer.Name} is too sick to get up and tells {helper.Name} how to care for the sick.");
         }
 
         if (medicineCats.Count == 0) {
             var bestHealer = Clan.Cats
-                .Where(c => c.Rank != Rank.Kit && !c.IsConfined && c.Healing >= Tuning.MinHealingToCare)
-                .OrderByDescending(c => c.Healing)
+                .Where(c => c.Rank != Rank.Kit && !c.IsConfined && Healing(c).Level >= Tuning.MinHealingToCare)
+                .OrderByDescending(c => Healing(c).Level)
                 .FirstOrDefault();
             if (bestHealer != null) {
                 if (bestHealer.IsSick)
-                    Care(bestHealer, bestHealer, bestHealer.Healing);
-                caregivers.Add((bestHealer, bestHealer.Healing));
+                    Care(bestHealer, bestHealer, Healing(bestHealer).Level);
+                caregivers.Add((bestHealer, Healing(bestHealer).Level));
             }
         }
 
@@ -252,12 +257,12 @@ public partial class World {
         _careSkill[patient] = skill;
         GiveHerbs(caregiver, patient);
 
-        var caregiverCap = caregiver.IsMedicineCat ? Tuning.SkillMax : caregiver.HealingGift;
-        caregiver.ImproveHealing(Tuning.HealingPracticePerCare * caregiver.HealingLearningFactor, caregiverCap);
+        var caregiverCap = caregiver.IsMedicineCat ? Tuning.SkillMax : Healing(caregiver).Gift;
+        Healing(caregiver).Improve(Tuning.HealingPracticePerCare * Healing(caregiver).LearningFactor, caregiverCap);
 
         if (patient != caregiver && !patient.IsMedicineCat)
-            patient.ImproveHealing(Tuning.PatientHealingGainPerCare * patient.HealingLearningFactor,
-                (int)(patient.HealingGift * Tuning.PatientHealingCapShare));
+            Healing(patient).Improve(Tuning.PatientHealingGainPerCare * Healing(patient).LearningFactor,
+                (int)(Healing(patient).Gift * Tuning.PatientHealingCapShare));
     }
 
     /// <summary>
@@ -285,7 +290,7 @@ public partial class World {
     ///     where to look (its healing skill).
     /// </summary>
     private void GatherHerbs(Cat gatherer) {
-        var skill = 0.5f + 0.5f * gatherer.Healing / Tuning.SkillMax;
+        var skill = 0.5f + 0.5f * Healing(gatherer).Level / Tuning.SkillMax;
         foreach (var herb in Enum.GetValues<Herb>()) {
             var doses = (float)_random.NextDouble() * 2f * Tuning.HerbsPerTrip
                         * Tuning.HerbSeasonMultiplier(herb, Season) * skill;
@@ -345,7 +350,7 @@ public partial class World {
     }
 
     private string MedicineSummary() {
-        var healers = Clan.Cats.Where(c => c.IsMedicineCat).Select(c => $"{c.Name} {c.Healing}").ToList();
+        var healers = Clan.Cats.Where(c => c.IsMedicineCat).Select(c => $"{c.Name} {Healing(c).Level}").ToList();
         return $"healers: {(healers.Count > 0 ? string.Join(", ", healers) : "none")}, herbs: {Clan.HerbStore}";
     }
 }

@@ -90,8 +90,9 @@ In order of priority:
 8. **UI (the user does UI themselves, don't change it unasked).** Useful
    properties:
    - `Cat`: `Conditions` (each has `Name`, `Severity`, `Recovery`, `Type`),
-     `IsSick`, `IsConfined`, `InMedicineDen`, `Healing`, `HealingGift`,
-     `HuntingGift`, `MentoringGift`, `Mentor`, `MoonsMentored`
+     `IsSick`, `IsConfined`, `InMedicineDen`, `Skills` (e.g.
+     `cat.Skills[SkillType.Hunting].Level` and `.Gift`), `MentoringGift`,
+     `Mentor`, `MoonsMentored`
    - `Clan.HerbStore.Doses(herb)`
 9. **Later ideas the user wants:**
    - warriors becoming medicine cats (like Cinderpelt)

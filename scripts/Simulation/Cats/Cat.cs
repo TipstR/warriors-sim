@@ -6,9 +6,7 @@ namespace WarriorsSim.Simulation;
 
 public class Cat {
     private int _moonsMentored;
-    private float _huntingProgress;
-    private int _healing;
-    private float _healingProgress;
+    private readonly Dictionary<SkillType, Skill> _skills;
     private readonly List<Condition> _conditions = new();
 
     /// <summary>Until which day the cat can't catch a sickness again, because it just had it.</summary>
@@ -21,9 +19,11 @@ public class Cat {
         Rank = rank;
         Sex = sex;
         AgeMoons = ageMoons;
-        Hunting = Math.Clamp(hunting, Tuning.SkillMin, Tuning.SkillMax);
         Diligence = Math.Clamp(diligence, Tuning.SkillMin, Tuning.SkillMax);
-        HuntingGift = Math.Clamp(huntingGift, Tuning.SkillMin, Tuning.SkillMax);
+        _skills = new Dictionary<SkillType, Skill> {
+            [SkillType.Hunting] = new(hunting, huntingGift),
+            [SkillType.Healing] = new(0, Tuning.AverageHealingGift)
+        };
         MentoringGift = Math.Clamp(mentoringGift, Tuning.SkillMin, Tuning.SkillMax);
         Mother = mother;
         Father = father;
@@ -78,36 +78,26 @@ public class Cat {
     public Rank Rank { get; private set; }
     public int AgeMoons { get; private set; }
 
-    /// <summary>Hunting skill, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />.</summary>
-    public int Hunting { get; private set; }
+    /// <summary>
+    ///     Every skill the cat has, with its level and gift, e.g. <c>cat.Skills[SkillType.Hunting].Level</c>.
+    ///     A new cat gets its hunting from the constructor. Healing starts at 0 with the low average gift
+    ///     (<see cref="Tuning.AverageHealingGift" />), because a gift for healing is rare.
+    /// </summary>
+    public IReadOnlyDictionary<SkillType, Skill> Skills => _skills;
+
+    /// <summary>
+    ///     Gives the cat a new level and gift for a skill, e.g. for cats that start the game or a kit's inherited gift.
+    ///     Not for learning: use <see cref="Skill.Improve" /> for that.
+    /// </summary>
+    public void SetSkill(SkillType type, int level, int gift) {
+        _skills[type] = new Skill(level, gift);
+    }
 
     /// <summary>How hard-working the cat is. Lazy cats hunt worse.</summary>
     public int Diligence { get; }
 
-    /// <summary>
-    ///     How gifted the cat was born for hunting, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />
-    ///     (<see cref="Tuning.AverageGift" /> = average). Gifted apprentices learn faster.
-    /// </summary>
-    public int HuntingGift { get; }
-
     /// <summary>How gifted the cat was born for teaching. Some cats are just bad mentors, however long they mentor.</summary>
     public int MentoringGift { get; }
-
-    /// <summary>
-    ///     How gifted the cat was born for healing. Much rarer than the other gifts, see
-    ///     <see cref="Tuning.HealingGiftRarity" />. Can be set for cats that start the game.
-    /// </summary>
-    public int HealingGift { get; init; } = Tuning.AverageHealingGift;
-
-    /// <summary>
-    ///     Healing skill, from <see cref="Tuning.SkillMin" /> to <see cref="Tuning.SkillMax" />. Medicine cats learn it
-    ///     from their mentor and by caring for the sick. Other cats learn a little when they are cared for.
-    ///     Can be set for cats that start the game.
-    /// </summary>
-    public int Healing {
-        get => _healing;
-        init => _healing = Math.Clamp(value, Tuning.SkillMin, Tuning.SkillMax);
-    }
 
     public bool IsMedicineCat => Rank is Rank.MedicineCat or Rank.MedicineCatApprentice;
 
@@ -138,17 +128,6 @@ public class Cat {
     /// <summary>How much faster (above 1) or slower (below 1) this cat's apprentice learns, from its mentoring quality.</summary>
     public float MentorFactor =>
         Tuning.WorstMentorFactor + (Tuning.BestMentorFactor - Tuning.WorstMentorFactor) * MentoringQuality;
-
-    /// <summary>How much faster (above 1) or slower (below 1) this cat learns to hunt, from its hunting gift.</summary>
-    public float HuntingLearningFactor => LearningFactor(HuntingGift);
-
-    /// <summary>How much faster (above 1) or slower (below 1) this cat learns to heal, from its healing gift.</summary>
-    public float HealingLearningFactor => LearningFactor(HealingGift);
-
-    private static float LearningFactor(int gift) {
-        return Tuning.LeastGiftedLearningFactor
-               + (Tuning.MostGiftedLearningFactor - Tuning.LeastGiftedLearningFactor) * gift / Tuning.SkillMax;
-    }
 
     /// <summary>Warriors, the deputy and the leader can mentor, but not while they are in the nursery.</summary>
     public bool CanMentor => Rank is Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery;
@@ -316,7 +295,7 @@ public class Cat {
     public float CatchChance {
         get {
             var chance = Tuning.BaseCatchChance
-                         + Hunting * Tuning.CatchChancePerHuntingPoint
+                         + Skills[SkillType.Hunting].Level * Tuning.CatchChancePerHuntingPoint
                          + (Diligence - Tuning.AverageDiligence) * Tuning.CatchChancePerDiligencePoint;
             // Old cats aren't as fit anymore, whatever their rank
             chance *= FrailtyMultiplier(Tuning.FrailHuntingMultiplier);
@@ -365,17 +344,6 @@ public class Cat {
         AgeMoons++;
     }
 
-    /// <summary>
-    ///     The skill is a whole number, so parts of a point are kept until they add up to a full point.
-    ///     Otherwise a gain of 5.4 every moon would always be rounded down to 5.
-    /// </summary>
-    public void ImproveHunting(float amount) {
-        _huntingProgress += amount;
-        var fullPoints = (int)_huntingProgress;
-        _huntingProgress -= fullPoints;
-        Hunting = Math.Clamp(Hunting + fullPoints, Tuning.SkillMin, Tuning.SkillMax);
-    }
-
     public bool HasCondition(ConditionType type) {
         return _conditions.Any(c => c.Type == type);
     }
@@ -398,17 +366,6 @@ public class Cat {
     /// <summary>Replaces a condition with a worse one, e.g. whitecough with greencough. No immunity for the old one.</summary>
     public void ReplaceCondition(Condition old, Condition worse) {
         _conditions[_conditions.IndexOf(old)] = worse;
-    }
-
-    /// <summary>Like <see cref="ImproveHunting" />: parts of a point are kept. Never above <paramref name="cap" />.</summary>
-    public void ImproveHealing(float amount, int cap = Tuning.SkillMax) {
-        if (_healing >= cap)
-            return;
-
-        _healingProgress += amount;
-        var fullPoints = (int)_healingProgress;
-        _healingProgress -= fullPoints;
-        _healing = Math.Clamp(_healing + fullPoints, Tuning.SkillMin, cap);
     }
 
     public void SetMentor(Cat mentor) {
