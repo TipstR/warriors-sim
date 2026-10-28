@@ -11,6 +11,7 @@ public partial class Player : Area2D {
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
+    private string _lastDirection;
     public override void _Process(double delta) {
         var velocity = Vector2.Zero;
         
@@ -42,10 +43,23 @@ public partial class Player : Area2D {
         if (vertical != "" && horizontal != "")
         {
             direction = $"{vertical}_{horizontal}";
+
+            if (horizontal != "") {
+                _lastDirection = horizontal;
+            }
+            else {
+                _lastDirection = vertical;
+            }
         }
-        else
-        {
+        else if (vertical != "" ^ horizontal != "") {
             direction = vertical + horizontal; // Falls nur eine Achse aktiv ist (z.B. nur "north" oder "east")
+            
+            if (horizontal != "") {
+                _lastDirection = horizontal;
+            }
+            else {
+                _lastDirection = vertical;
+            }
         }
 
         
@@ -59,6 +73,7 @@ public partial class Player : Area2D {
         }
         else
         {
+            animatedSprite2D.Play($"sitting_{_lastDirection}");
             animatedSprite2D.Stop();
         }
         

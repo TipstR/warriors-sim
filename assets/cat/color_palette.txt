@@ -1,0 +1,16 @@
+1  - outline
+2  - main fur
+3  - ear
+4  - fur shading dark
+5  - mouth
+6  - fur shading bright
+7  - nose
+8  - tongue
+9  - 
+10 - neck bright
+11 - neck dark
+12 - eye
+13 - stripe dark
+14 - stripe bright
+15 - 
+16 - 
