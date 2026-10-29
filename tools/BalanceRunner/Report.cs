@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using WarriorsSim.Simulation;
 
 namespace WarriorsSim.BalanceRunner;
 
@@ -46,6 +47,16 @@ public static class Report {
 
         Console.WriteLine();
         Console.WriteLine("Training:");
+        var ages = results.SelectMany(r => r.CeremonyAge).OrderBy(a => a).ToList();
+        if (ages.Count > 0) {
+            var late = ages.Count(a => a > Tuning.WarriorAgeMoons) * 100f / ages.Count;
+            Console.WriteLine($"  age at the ceremony: mean {ages.Average():0.0}, 90% {Percentile(ages, 0.9f):0}, "
+                              + $"99% {Percentile(ages, 0.99f):0}, max {ages[^1]:0}; {late:0}% were late");
+            Console.WriteLine($"  oldest apprentice per run: mean {results.Average(r => r.OldestApprentice):0.0}, "
+                              + $"max {results.Max(r => r.OldestApprentice)}; "
+                              + $"{results.Sum(r => r.DiedAsLateApprentice) / (float)seeds:0.0} per run died as late apprentices");
+        }
+
         var lessons = results.Sum(r => r.Lessons);
         var apprenticeMoons = results.Sum(r => r.ApprenticeMoons);
         if (apprenticeMoons > 0)

@@ -15,6 +15,15 @@ public class SeedResult {
     public int SicknessDeaths;
 
     public readonly List<float> CeremonyHunting = new();
+
+    /// <summary>The age of every apprentice at its warrior ceremony, in moons.</summary>
+    public readonly List<float> CeremonyAge = new();
+
+    /// <summary>The oldest any apprentice got before its ceremony (or death).</summary>
+    public int OldestApprentice;
+
+    /// <summary>Apprentices who died after the warrior age, before they got their warrior name.</summary>
+    public int DiedAsLateApprentice;
     public readonly List<float> HuntingAt48Moons = new();
     public readonly List<float> HuntingAt96Moons = new();
 
@@ -70,6 +79,7 @@ public static class SeedRun {
         var seenAt48 = new HashSet<Cat>();
         var seenAt96 = new HashSet<Cat>();
         var rusty = new Dictionary<Cat, (float Lost, int Moons)>();
+        var apprentices = new HashSet<Cat>();
 
         var world = new World(clan, seed, (_, line) => ReadLogLine(line, result, catchesThisYear));
 
@@ -91,6 +101,7 @@ public static class SeedRun {
 
                 TrackRustyHunters(clan, rusty, result);
                 result.ApprenticeMoons += clan.Cats.Count(c => c.Rank == Rank.Apprentice);
+                TrackCeremonies(clan, apprentices, result);
             }
 
             if (tick % TicksPerYear == 0) {
@@ -176,6 +187,26 @@ public static class SeedRun {
             if (!result.FadedBelowPeak.TryGetValue(group, out var list))
                 result.FadedBelowPeak[group] = list = new List<float>();
             list.Add(skill.Peak - skill.Level);
+        }
+    }
+
+    /// <summary>Checked every moon: who became a warrior since the last moon, at what age, and who died before.</summary>
+    private static void TrackCeremonies(Clan clan, HashSet<Cat> apprentices, SeedResult result) {
+        foreach (var cat in apprentices.ToList()) {
+            if (!clan.Cats.Contains(cat)) {
+                if (cat.AgeMoons > Tuning.WarriorAgeMoons)
+                    result.DiedAsLateApprentice++;
+                apprentices.Remove(cat);
+            }
+            else if (cat.Rank != Rank.Apprentice) {
+                result.CeremonyAge.Add(cat.AgeMoons);
+                apprentices.Remove(cat);
+            }
+        }
+
+        foreach (var cat in clan.Cats.Where(c => c.Rank == Rank.Apprentice)) {
+            apprentices.Add(cat);
+            result.OldestApprentice = Math.Max(result.OldestApprentice, cat.AgeMoons);
         }
     }
 
