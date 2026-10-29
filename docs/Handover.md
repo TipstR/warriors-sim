@@ -6,6 +6,15 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Skill overhaul, step 3 of 4 done: use it or lose it.** A skill not
+  practiced in a moon loses `SkillFadePerMoon` (1) point, never below
+  `SkillFadeFloorShare` (half) of its `Peak`. Practice: going hunting (even
+  without a catch), caring or gathering herbs, any learning (so apprentices
+  in training never fade). Below its peak a cat relearns `RelearnFactor` (10)
+  times faster, "like riding a bike" (user): rusty hunters lose ~2 points and
+  are back at their peak after ~3 moons. In practice only elders fade much
+  (~6 points), because almost every cat hunts every moon; fading will matter
+  more once cats split their time between tasks. No effect on the balance.
 - **Balance runner in the repo** (`6bea04b`): `tools/BalanceRunner`, see
   "How to test".
 - **Skill overhaul, step 2 of 4 done** (`57d1701`): every caught mouse
@@ -32,17 +41,15 @@ agents' own memory doesn't move between computers.
 - Earlier: sickness, injuries, medicine den, herbs, soft birth brake, gifts and
   mentors (see git log and `docs/Milestone1.md`).
 
-Last test (100 seeds × 30 years, Balanced leader, after step 2): 1 of 100
-Clans died out, 7.7 starved per year, ~2 sickness deaths per run.
+Last test (100 seeds × 30 years, Balanced leader, after step 3): 1 of 100
+Clans died out, 7.8 starved per year, ~2 sickness deaths per run.
 
 ## Skill overhaul: next steps
 
 One step at a time, a 100-seed test after each, commit when the user agrees.
 
-3. **Use it or lose it (next).** Skills decay without practice, but only **down to a
-   floor** (e.g. half the best level the cat ever had). **Not for apprentices
-   in training** (training counts as practice), otherwise a weak learner could
-   never reach the ceremony minimum.
+Next: **training patrols + mentoring as a skill** (below), then step 4.
+
 4. **Minimum skill for the warrior ceremony** (40 or 50, tunable). Apprentices
    **stay apprentices until good enough**, no exception. User: "the minimum
    must be achievable by any cat". Counterweight: a **motivation bonus** for
@@ -53,14 +60,26 @@ One step at a time, a 100-seed test after each, commit when the user agrees.
    at the ceremony (average, max) and how many cats reach 90+/95+ per skill.
 
 **Mentoring becomes a skill** (user confirmed: "mentoring must be a skill"),
-learned by teaching, replacing `MentoringGift` + `MoonsMentored`. Its own
-step after step 4, unless it is combined with training patrols (below).
+learned by teaching (lessons on training patrols), replacing `MentoringGift`
++ `MoonsMentored`. Built together with the training patrols.
 
-**Under discussion: training patrols.** The user wants the leader to send
-mentors with their apprentices (two pairs per patrol) when no patrol is
-needed. Measured: a patrol is needed in 98–100% of daytime ticks, because the
-Clan always lives at its food limit, so that rule would almost never fire.
-Proposed instead: see the conversation of 2026-10-29 / the user's answer.
+**Training patrols** (user decided 2026-10-29, build before step 4, together
+with mentoring as a skill). Extra patrols "when not needed"
+would almost never happen (a patrol is needed in 98–100% of daytime ticks,
+the Clan always lives at its food limit), so the training happens in the
+patrols the leader sends anyway:
+- Outside a famine, a training patrol is **two apprentices and two
+  warriors**. The leader tries to pair each apprentice with its mentor, but if
+  the mentor is hindered (sick, asleep, hunted last time, ...) another warrior
+  **helps out**. The helper gets some mentoring practice too, which is nice
+  for young warriors without an apprentice of their own.
+- On a training patrol the apprentice gets a hunting lesson. About **half of
+  the training moves from the fixed monthly gain into these lessons**, so the
+  average new warrior stays ~54 hunting (the food balance is very sensitive
+  to it) and an apprentice whose mentor is often away still learns, just
+  slower.
+- **In a famine** the leader stops training patrols and sends the best
+  hunters first (as now), so apprentices learn more slowly in hard times.
 
 After step 4: update the training rules in `docs/Milestone1.md` (they still
 describe integer skills and "parts of a point are kept").
@@ -119,7 +138,9 @@ describe integer skills and "parts of a point are kept").
   (queens, the sick, the frail); ranks are only for the warrior code. Old cats
   hunt worse but mentor as well as before.
 - Skills: floats, every level harder, but 90+ must be reachable for the very
-  best. Learning by doing per caught mouse. Decay down to a floor.
+  best. Learning by doing per caught mouse. Decay down to a floor, and a
+  faded skill comes back quickly ("feeling rusty after a sickness", not a
+  RimWorld-like cap; "hunting for a cat is like riding a bike").
   Apprentices stay apprentices until they reach the minimum, which every cat
   must be able to reach.
 - Balance doesn't have to be perfect before committing; commit working steps.
