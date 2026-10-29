@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/cat/CatView.cs" id="1_catview"]
+[ext_resource type="PackedScene" path="res://game/cat/cat_sprite.tscn" id="2_catsprite"]
+
+[node name="CatView" type="Node2D"]
+script = ExtResource("1_catview")
+Speed = 150.0
+
+[node name="CatSprite" parent="." instance=ExtResource("2_catsprite")]
+unique_name_in_owner = true
+position = Vector2(0, -48)
+scale = Vector2(3, 3)
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = -100.0
+offset_top = 2.0
+offset_right = 100.0
+offset_bottom = 30.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 18
+text = "Name"
+horizontal_alignment = 1
