@@ -6,6 +6,24 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Training patrols + mentoring as a skill.** `SkillType.Mentoring` (every
+  cat starts at `StartingMentoring` 20, the old mentoring gift is its gift)
+  replaces `MentoringGift`, `MoonsMentored` and the "inexperienced mentor"
+  rule. `Cat.MentorFactor` comes from the mentoring level. **Mentoring never
+  fades** (user: a warrior waiting for an apprentice can't practice it, and a
+  rusty mentor would never get picked again). Outside a famine the leader
+  first sends every available apprentice with a teacher, two pairs per patrol,
+  even when no prey is needed (`World.SendTrainingPatrols`): its mentor, or a
+  random helper, preferably one without an apprentice. Then normal patrols
+  as needed. Each lesson: apprentice hunting + `HuntingLessonGain` (0.158) ×
+  teacher's `MentorFactor`, teacher mentoring + `MentoringPracticePerLesson`
+  (0.06, helpers half). Camp training `ApprenticeHuntingGainPerMoon` halved to
+  5.25. Medicine mentors learn `MedicineMentoringPracticePerMoon`. Log lines
+  for training patrols and for cats feeling rusty / back to their old self.
+  Results: ~37 lessons per apprentice and moon (26% by helpers), new
+  warriors ~54 (best 10% 75+, weakest 10% 36), **1 in 17 cats reaches 90+**
+  (was 1 in 29: great mentors make great hunters). The user keeps this
+  balance for now, to tune later.
 - **Skill overhaul, step 3 of 4 done: use it or lose it.** A skill not
   practiced in a moon loses `SkillFadePerMoon` (1) point, never below
   `SkillFadeFloorShare` (half) of its `Peak`. Practice: going hunting (even
@@ -41,14 +59,12 @@ agents' own memory doesn't move between computers.
 - Earlier: sickness, injuries, medicine den, herbs, soft birth brake, gifts and
   mentors (see git log and `docs/Milestone1.md`).
 
-Last test (100 seeds × 30 years, Balanced leader, after step 3): 1 of 100
-Clans died out, 7.8 starved per year, ~2 sickness deaths per run.
+Last test (100 seeds × 30 years, Balanced leader, after training patrols):
+0 of 100 Clans died out, 7.5 starved per year, ~2 sickness deaths per run.
 
 ## Skill overhaul: next steps
 
 One step at a time, a 100-seed test after each, commit when the user agrees.
-
-Next: **training patrols + mentoring as a skill** (below), then step 4.
 
 4. **Minimum skill for the warrior ceremony** (40 or 50, tunable). Apprentices
    **stay apprentices until good enough**, no exception. User: "the minimum
@@ -58,28 +74,6 @@ Next: **training patrols + mentoring as a skill** (below), then step 4.
    ever"). The user doesn't want to tune around a target length: test first
    and see whether anyone gets close to a long apprenticeship. Measure the age
    at the ceremony (average, max) and how many cats reach 90+/95+ per skill.
-
-**Mentoring becomes a skill** (user confirmed: "mentoring must be a skill"),
-learned by teaching (lessons on training patrols), replacing `MentoringGift`
-+ `MoonsMentored`. Built together with the training patrols.
-
-**Training patrols** (user decided 2026-10-29, build before step 4, together
-with mentoring as a skill). Extra patrols "when not needed"
-would almost never happen (a patrol is needed in 98–100% of daytime ticks,
-the Clan always lives at its food limit), so the training happens in the
-patrols the leader sends anyway:
-- Outside a famine, a training patrol is **two apprentices and two
-  warriors**. The leader tries to pair each apprentice with its mentor, but if
-  the mentor is hindered (sick, asleep, hunted last time, ...) another warrior
-  **helps out**. The helper gets some mentoring practice too, which is nice
-  for young warriors without an apprentice of their own.
-- On a training patrol the apprentice gets a hunting lesson. About **half of
-  the training moves from the fixed monthly gain into these lessons**, so the
-  average new warrior stays ~54 hunting (the food balance is very sensitive
-  to it) and an apprentice whose mentor is often away still learns, just
-  slower.
-- **In a famine** the leader stops training patrols and sends the best
-  hunters first (as now), so apprentices learn more slowly in hard times.
 
 After step 4: update the training rules in `docs/Milestone1.md` (they still
 describe integer skills and "parts of a point are kept").
@@ -105,11 +99,16 @@ describe integer skills and "parts of a point are kept").
 6. **UI is the user's area, don't change it unasked** (only minimal fixes when
    a refactor breaks the build). Useful properties: `cat.Skills`,
    `cat.Conditions`, `IsSick`, `IsConfined`, `InMedicineDen`, `Mentor`,
-   `MentoringGift`, `MoonsMentored`, `Clan.HerbStore.Doses(herb)`.
+   `MentorFactor`, `cat.Skills[SkillType.Mentoring]`, `Skill.Peak`,
+   `Clan.HerbStore.Doses(herb)`.
 7. **Later ideas the user wants:** warriors becoming medicine cats (like
    Cinderpelt), remembering every apprentice a cat trained, the rule that a
    deputy must have had an apprentice, loners and kittypets joining for new
    blood, "volunteer work" (warriors hunting for sport, practicing skills).
+   User 2026-10-29: **diligent cats decide for themselves to practice**
+   hunting without a patrol, or ask the leader to come along on the next
+   patrol (`Diligence` decides). This is the counterweight to fading once
+   cats have more tasks than hunting.
 
 ## How to test
 
@@ -140,7 +139,9 @@ describe integer skills and "parts of a point are kept").
 - Skills: floats, every level harder, but 90+ must be reachable for the very
   best. Learning by doing per caught mouse. Decay down to a floor, and a
   faded skill comes back quickly ("feeling rusty after a sickness", not a
-  RimWorld-like cap; "hunting for a cat is like riding a bike").
+  RimWorld-like cap; "hunting for a cat is like riding a bike"). Mentoring
+  is a skill learned by teaching and never fades. Apprentices learn on
+  training patrols with their mentor or a helper, except in a famine.
   Apprentices stay apprentices until they reach the minimum, which every cat
   must be able to reach.
 - Balance doesn't have to be perfect before committing; commit working steps.
