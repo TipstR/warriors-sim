@@ -1,6 +1,6 @@
 namespace WarriorsSim.Simulation;
 
 public enum Sex {
-    SheCat,
-    Tom
+	SheCat,
+	Tom
 }

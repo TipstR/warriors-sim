@@ -23,12 +23,12 @@ Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 var seeds = args.Length > 0 ? int.Parse(args[0]) : 100;
 var years = args.Length > 1 ? int.Parse(args[1]) : 30;
 foreach (var setting in args.Skip(2)) {
-    var parts = setting.Split('=');
-    if (parts[0] == "Policy")
-        Tuning.DefaultFeedingPolicy = FeedingPolicy.Presets[parts[1]];
-    else
-        TuningSettings.Get(parts[0]).Value = parts[1];
-    Console.WriteLine($"{parts[0]} = {parts[1]}");
+	var parts = setting.Split('=');
+	if (parts[0] == "Policy")
+		Tuning.DefaultFeedingPolicy = FeedingPolicy.Presets[parts[1]];
+	else
+		TuningSettings.Get(parts[0]).Value = parts[1];
+	Console.WriteLine($"{parts[0]} = {parts[1]}");
 }
 
 var stopwatch = Stopwatch.StartNew();

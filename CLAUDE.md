@@ -80,7 +80,8 @@ When moving a script, move its `.uid` file with it.
 - **Scenes (`.tscn`) can be edited as text.** Prefer containers and anchors,
   give nodes the user needs in code a unique name. Commit `.uid` files.
 - **Code style** is set in `.editorconfig`: braces on the same line,
-  4 spaces, `var` where Rider uses it. Match the surrounding code.
+  tabs for indentation (the user's choice), `var` where Rider uses it. Match
+  the surrounding code.
 - **Build:** `dotnet build` in the project folder (builds the game and the
   tests).
 - **Tests:** `dotnet test tests/WarriorsSim.Tests`, or the Unit Tests window in

@@ -20,6 +20,8 @@
     <None Include="ui\**\*.uid" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="game\camp\Camp.cs.uid" />
+    <Content Include="game\camp\camp.tscn" />
     <Content Include="game\pallet_swap.tres" />
     <Content Include="game\Player.tscn" />
     <Content Include="game\scripts\Player.cs.uid" />
