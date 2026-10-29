@@ -52,7 +52,7 @@ public partial class Player : Area2D {
             }
         }
         else if (vertical != "" ^ horizontal != "") {
-            direction = vertical + horizontal; // Falls nur eine Achse aktiv ist (z.B. nur "north" oder "east")
+            direction = vertical + horizontal; 
             
             if (horizontal != "") {
                 _lastDirection = horizontal;
@@ -73,7 +73,10 @@ public partial class Player : Area2D {
         }
         else
         {
-            animatedSprite2D.Play($"sitting_{_lastDirection}");
+            if (_lastDirection != "") {
+                animatedSprite2D.Play($"sitting_{_lastDirection}");
+            }
+            
             animatedSprite2D.Stop();
         }
         

@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://bsohwina8itnd" path="res://assets/cat/cat 1.png" id="2_4r2ne"]
 [ext_resource type="Shader" uid="uid://chmi5rrqma4cy" path="res://game/pallet_swap.tres" id="2_08n30"]
 [ext_resource type="Texture2D" uid="uid://cgw6fo8bpdmee" path="res://assets/cat/cat 1 color palette.png" id="4_beuwv"]
-[ext_resource type="Texture2D" uid="uid://dqryjks125i4u" path="res://assets/cat/cat_1_test_original.png" id="4_sdcbx"]
+[ext_resource type="Texture2D" uid="uid://cwycorci7ans6" path="res://assets/cat/cat_1_test_palette.png" id="4_sdcbx"]
 [ext_resource type="Texture2D" uid="uid://bd3yrkcummvw7" path="res://assets/cat/cat 1_test.png" id="5_beuwv"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5vuhm"]
@@ -129,20 +129,20 @@ region = Rect2(128, 352, 32, 32)
 atlas = ExtResource("2_4r2ne")
 region = Rect2(160, 352, 32, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_7xkc4"]
-atlas = ExtResource("2_4r2ne")
+[sub_resource type="AtlasTexture" id="AtlasTexture_v6r3p"]
+atlas = ExtResource("5_beuwv")
 region = Rect2(0, 128, 32, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_t457i"]
-atlas = ExtResource("2_4r2ne")
+[sub_resource type="AtlasTexture" id="AtlasTexture_2hrq0"]
+atlas = ExtResource("5_beuwv")
 region = Rect2(32, 128, 32, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_cnkll"]
-atlas = ExtResource("2_4r2ne")
+[sub_resource type="AtlasTexture" id="AtlasTexture_vn4bg"]
+atlas = ExtResource("5_beuwv")
 region = Rect2(64, 128, 32, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_30yl0"]
-atlas = ExtResource("2_4r2ne")
+[sub_resource type="AtlasTexture" id="AtlasTexture_r48md"]
+atlas = ExtResource("5_beuwv")
 region = Rect2(96, 128, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_5absc"]
@@ -361,16 +361,16 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_7xkc4")
+"texture": SubResource("AtlasTexture_v6r3p")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_t457i")
+"texture": SubResource("AtlasTexture_2hrq0")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_cnkll")
+"texture": SubResource("AtlasTexture_vn4bg")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_30yl0")
+"texture": SubResource("AtlasTexture_r48md")
 }],
 "loop": 1,
 "name": &"walk_south",
@@ -461,7 +461,7 @@ script = ExtResource("1_berb2")
 material = SubResource("ShaderMaterial_5vuhm")
 scale = Vector2(5, 5)
 sprite_frames = SubResource("SpriteFrames_36hr8")
-animation = &"sitting_west"
+animation = &"walk_south"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=41215156]
 scale = Vector2(5, 5)

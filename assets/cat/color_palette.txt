@@ -13,4 +13,3 @@
 13 - stripe dark
 14 - stripe bright
 15 - 
-16 - 
