@@ -5,21 +5,23 @@
 
 [node name="CatView" type="Node2D"]
 script = ExtResource("1_catview")
-Speed = 150.0
+Speed = 50.0
 
 [node name="CatSprite" parent="." instance=ExtResource("2_catsprite")]
 unique_name_in_owner = true
-position = Vector2(0, -48)
-scale = Vector2(3, 3)
+position = Vector2(0, -16)
 
-[node name="NameLabel" type="Label" parent="."]
+[node name="NameTag" type="Node2D" parent="."]
+position = Vector2(0, 1)
+scale = Vector2(0.25, 0.25)
+
+[node name="NameLabel" type="Label" parent="NameTag"]
 unique_name_in_owner = true
-offset_left = -100.0
-offset_top = 2.0
-offset_right = 100.0
-offset_bottom = 30.0
+offset_left = -150.0
+offset_right = 150.0
+offset_bottom = 40.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 18
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 28
 text = "Name"
 horizontal_alignment = 1
