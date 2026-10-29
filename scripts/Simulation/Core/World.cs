@@ -573,7 +573,10 @@ public partial class World {
         Log($"Hunting patrol caught {total} mice ({string.Join(", ", catches)}). Pile: {Clan.FreshKillPile.Mice}");
     }
 
-    /// <summary>Rolls every hunting attempt of one cat and returns how many mice it caught.</summary>
+    /// <summary>
+    ///     Rolls every hunting attempt of one cat and returns how many mice it caught.
+    ///     Every mouse it catches teaches it a little (<see cref="Tuning.HuntingPracticePerMouse" />).
+    /// </summary>
     private int Hunt(Cat cat) {
         var caught = 0;
         for (var i = 0; i < Tuning.AttemptsPerCat; i++) {
@@ -588,6 +591,7 @@ public partial class World {
             if (_random.NextDouble() < chance) {
                 caught++;
                 _miceCaughtToday++;
+                cat.Skills[SkillType.Hunting].Improve(Tuning.HuntingPracticePerMouse);
             }
         }
 

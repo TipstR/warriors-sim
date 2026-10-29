@@ -495,6 +495,14 @@ public static class Tuning {
     [TuningGroup("Hunting")] public static float CatchChancePerDiligencePoint = 0.002f;
 
     /// <summary>
+    ///     How much a cat's hunting skill improves with every mouse it catches, before its gift and the difficulty
+    ///     (see <see cref="Skill.Improve" />). Learning by doing: good hunters catch more and keep getting better.
+    ///     Tested with 100 seeds × 30 years: with 0.002 the average hunter goes from ~54 at the ceremony to ~65 at
+    ///     96 moons, and about 1 in 30 cats reaches 90+ in its life (0.004: 1 in 6, without practice: 1 in 400).
+    /// </summary>
+    [TuningGroup("Hunting")] public static float HuntingPracticePerMouse = 0.002f;
+
+    /// <summary>
     ///     A fully frail cat (see <see cref="Cat.Frailty" />) catches prey only this well (0.3 = 30% of its usual chance).
     ///     Old cats lose their fitness, not their experience: they mentor as well as before. With 0.3, a cat of
     ///     120 moons hunts at about 80%, one of 150 moons at about 55%. Elders only hunt in a famine.
