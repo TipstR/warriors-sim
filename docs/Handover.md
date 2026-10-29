@@ -6,6 +6,18 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Making the simulation observable (in progress).** Goal (user,
+  2026-10-29): watch the running simulation in a 2D camp, camera following a
+  chosen cat, no player yet. Later it must play like an RPG: you are one cat,
+  the rest is simulated and must feel alive. Simulation side, step 1 done:
+  `cat.Activity` (what the cat did last tick: InCamp, Sleeping, Resting,
+  Hunting, Training, GatheringHerbs, Caring; where in camp comes from
+  `cat.Den`), `World.PatrolSent` (a `Patrol`: cats, training or not, mice),
+  `World.CatAte`, `Clan.CatAdded` / `Clan.CatDied`. Logs identical before and
+  after. The user wants help with the Godot side (camp scene, a cat view
+  driven by the simulation, a clock node that ticks the world). Pelt colours
+  wait until the user has retextured the animations.
+
 - **Skill overhaul done (step 4: minimum for the warrior ceremony).** At
   12 moons an apprentice only becomes a warrior with at least
   `MinHuntingForWarrior` (40) hunting (user chose 40 over 50: 50 lifted the

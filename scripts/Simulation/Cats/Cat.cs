@@ -193,6 +193,9 @@ public class Cat {
     /// </summary>
     public bool InMedicineDen { get; set; }
 
+    /// <summary>What the cat did during the last tick, e.g. hunting or sleeping. Set by the world every tick.</summary>
+    public Activity Activity { get; set; } = Activity.InCamp;
+
     /// <summary>Where the cat sleeps. Queens sleep in the nursery with the kits, patients in the medicine den.</summary>
     public Den Den {
         get {

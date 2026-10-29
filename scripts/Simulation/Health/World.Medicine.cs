@@ -137,6 +137,10 @@ public partial class World {
             var wasInDen = cat.InMedicineDen;
             cat.InMedicineDen = wanted.Contains(cat);
 
+            // A cat that comes back hurt from a patrol was still out hunting this tick
+            if (cat.InMedicineDen && cat.Activity == Activity.InCamp)
+                cat.Activity = Activity.Resting;
+
             if (cat.InMedicineDen && !wasInDen)
                 Log($"{cat} has been taken into the medicine den.");
             else if (!cat.InMedicineDen && wasInDen && NeedsNest(cat))
@@ -193,8 +197,13 @@ public partial class World {
                 cared.Add(patient);
             }
 
-            if (cared.Count > 0)
-                Log($"{caregiver.Name} cared for {Names(cared)}.");
+            if (cared.Count == 0)
+                continue;
+
+            // A helper who was out on patrol cares for them when it is back, so it still counts as patrolling
+            if (caregiver.Activity is Activity.InCamp or Activity.Sleeping)
+                caregiver.Activity = Activity.Caring;
+            Log($"{caregiver.Name} cared for {Names(cared)}.");
         }
     }
 
@@ -289,6 +298,7 @@ public partial class World {
     ///     where to look (its healing skill).
     /// </summary>
     private void GatherHerbs(Cat gatherer) {
+        gatherer.Activity = Activity.GatheringHerbs;
         Healing(gatherer).Practice();
         var skill = 0.5f + 0.5f * Healing(gatherer).Level / Tuning.SkillMax;
         foreach (var herb in Enum.GetValues<Herb>()) {

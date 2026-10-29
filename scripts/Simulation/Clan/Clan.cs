@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -31,8 +32,18 @@ public class Clan {
         return _cats.FirstOrDefault(c => c.Rank == Rank.Apprentice && c.Mentor == mentor);
     }
 
+    /// <summary>
+    ///     Called when a cat joins the Clan, e.g. a newborn kit. The starting cats joined before anyone could listen,
+    ///     so read them from <see cref="Cats" />.
+    /// </summary>
+    public event Action<Cat> CatAdded;
+
+    /// <summary>Called when a cat of the Clan has died.</summary>
+    public event Action<Cat> CatDied;
+
     public void AddCat(Cat cat) {
         _cats.Add(cat);
+        CatAdded?.Invoke(cat);
     }
 
     /// <summary>Moves a cat from the living to the dead. Its mate becomes free to find a new one.</summary>
@@ -42,6 +53,7 @@ public class Clan {
 
         _dead.Add(cat);
         cat.Mate?.LoseMate();
+        CatDied?.Invoke(cat);
     }
 
     /// <summary>How the Clan decides who eats first. Later this will come from the leader's personality.</summary>

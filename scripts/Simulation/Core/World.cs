@@ -45,6 +45,13 @@ public partial class World {
     }
 
     public Clan Clan { get; }
+
+    /// <summary>Called for every patrol the leader sends out, after it has hunted. Training patrols too.</summary>
+    public event Action<Patrol> PatrolSent;
+
+    /// <summary>Called when a cat eats a piece of prey from the fresh-kill pile.</summary>
+    public event Action<Cat> CatAte;
+
     public int Day { get; private set; } = 1;
     public TimeOfDay TimeOfDay { get; private set; } = TimeOfDay.Dawn;
 
@@ -68,6 +75,7 @@ public partial class World {
         UpdateNursery();
         LoseSatiation();
         DecideWhoSleeps();
+        ResetActivities();
 
         if (TimeOfDay != TimeOfDay.Night) {
             SendHuntingPatrolsIfNeeded();
@@ -499,6 +507,17 @@ public partial class World {
             .ToHashSet();
     }
 
+    /// <summary>
+    ///     Every cat starts the tick asleep, resting in its nest when it is sick, or in camp. Patrols, healers and
+    ///     the medicine den change it during the tick.
+    /// </summary>
+    private void ResetActivities() {
+        foreach (var cat in Clan.Cats)
+            cat.Activity = _sleeping.Contains(cat) ? Activity.Sleeping
+                : cat.IsConfined || cat.InMedicineDen ? Activity.Resting
+                : Activity.InCamp;
+    }
+
     /// <summary>Sleeping cats regain energy, awake cats lose it. Happens at the end of a tick.</summary>
     private void UpdateEnergy() {
         foreach (var cat in Clan.Cats) {
@@ -637,7 +656,7 @@ public partial class World {
             Log($"Training patrol: {string.Join(", ", lessons)}.");
 
             var patrol = patrolPairs.SelectMany(p => new[] { p.Apprentice, p.Teacher }).ToList();
-            SendHuntingPatrol(patrol);
+            SendHuntingPatrol(patrol, true);
             foreach (var (apprentice, teacher) in patrolPairs)
                 GiveLesson(apprentice, teacher);
             sent.AddRange(patrol);
@@ -690,10 +709,11 @@ public partial class World {
         return cat.Rank is Rank.Leader or Rank.Deputy ? 1 : 0;
     }
 
-    private void SendHuntingPatrol(List<Cat> patrol) {
+    private void SendHuntingPatrol(List<Cat> patrol, bool isTraining = false) {
         var catches = new List<string>();
         var total = 0;
         foreach (var cat in patrol) {
+            cat.Activity = isTraining ? Activity.Training : Activity.Hunting;
             var caught = Hunt(cat);
             total += caught;
             catches.Add($"{cat.Name} {caught}");
@@ -703,6 +723,7 @@ public partial class World {
         Clan.FreshKillPile.Add(total);
         _miceCaughtThisMoon += total;
         Log($"Hunting patrol caught {total} mice ({string.Join(", ", catches)}). Pile: {Clan.FreshKillPile.Mice}");
+        PatrolSent?.Invoke(new Patrol(patrol, isTraining, total));
     }
 
     /// <summary>
@@ -743,6 +764,7 @@ public partial class World {
                 cat.Eat(Tuning.MouseSatiation);
                 _ateThisTick.Add(cat);
                 ate.Add(cat);
+                CatAte?.Invoke(cat);
             }
             else {
                 wentHungry.Add(cat);
