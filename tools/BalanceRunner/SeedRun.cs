@@ -24,6 +24,18 @@ public class SeedResult {
     /// <summary>Once per year: the share of all mice caught by the best 20% of that year's hunters.</summary>
     public readonly List<float> Top20CatchShare = new();
 
+    /// <summary>
+    ///     Once per year: how far below its peak each living cat's skill is, by group, e.g. "elders" → [3.5, 0, 12].
+    ///     Hunting for everyone except medicine cats, healing for medicine cats.
+    /// </summary>
+    public readonly Dictionary<string, List<float>> FadedBelowPeak = new();
+
+    /// <summary>
+    ///     Every time a hunter (not an elder) got rusty: how many points it lost at most and how many moons it took
+    ///     until it was back at its peak. Times that hadn't ended when the run ended (or the cat died) don't count.
+    /// </summary>
+    public readonly List<(float Lost, int Moons)> RustyTimes = new();
+
     public int Adults;
     public int Reached90;
     public int Reached95;
@@ -44,6 +56,7 @@ public static class SeedRun {
         var startingCats = clan.Cats.ToHashSet();
         var seenAt48 = new HashSet<Cat>();
         var seenAt96 = new HashSet<Cat>();
+        var rusty = new Dictionary<Cat, (float Lost, int Moons)>();
 
         var world = new World(clan, seed, (_, line) => ReadLogLine(line, result, catchesThisYear));
 
@@ -62,6 +75,8 @@ public static class SeedRun {
                     if (cat.AgeMoons >= 96 && seenAt96.Add(cat))
                         result.HuntingAt96Moons.Add(hunting);
                 }
+
+                TrackRustyHunters(clan, rusty, result);
             }
 
             if (tick % TicksPerYear == 0) {
@@ -70,12 +85,11 @@ public static class SeedRun {
             }
         }
 
-        // Skills only grow for now, so the last level is the best the cat ever had.
-        // When skills can fade (step 3 of the skill overhaul), this needs the peak level instead.
+        // The best level each cat ever had, because skills can fade
         foreach (var cat in clan.Dead.Concat(clan.Cats)) {
             if (startingCats.Contains(cat) || cat.IsMedicineCat || cat.AgeMoons < 12)
                 continue;
-            var hunting = cat.Skills[SkillType.Hunting].Level;
+            var hunting = cat.Skills[SkillType.Hunting].Peak;
             result.Adults++;
             if (hunting >= 90)
                 result.Reached90++;
@@ -126,5 +140,41 @@ public static class SeedRun {
             .ToList();
         if (hunters.Count >= 5)
             result.LivingHuntersByYear.Add(hunters);
+
+        foreach (var cat in clan.Cats.Where(c => c.Rank != Rank.Kit)) {
+            var skill = cat.Skills[cat.IsMedicineCat ? SkillType.Healing : SkillType.Hunting];
+            var group = FadeGroup(cat);
+            if (!result.FadedBelowPeak.TryGetValue(group, out var list))
+                result.FadedBelowPeak[group] = list = new List<float>();
+            list.Add(skill.Peak - skill.Level);
+        }
+    }
+
+    private static void TrackRustyHunters(Clan clan, Dictionary<Cat, (float Lost, int Moons)> rusty, SeedResult result) {
+        foreach (var cat in clan.Cats.Where(c => !c.IsMedicineCat && c.Rank != Rank.Elder)) {
+            var hunting = cat.Skills[SkillType.Hunting];
+            var lost = hunting.Peak - hunting.Level;
+            var wasRusty = rusty.TryGetValue(cat, out var time);
+
+            if (lost >= 0.5f)
+                rusty[cat] = (Math.Max(time.Lost, lost), time.Moons + 1);
+            else if (wasRusty && lost < 0.1f) {
+                result.RustyTimes.Add(time);
+                rusty.Remove(cat);
+            }
+        }
+    }
+
+    private static string FadeGroup(Cat cat) {
+        if (cat.IsMedicineCat)
+            return "medicine cats (healing)";
+        if (cat.IsNursing)
+            return "nursing queens";
+        return cat.Rank switch {
+            Rank.Leader or Rank.Deputy => "leader and deputy",
+            Rank.Elder => "elders",
+            Rank.Apprentice => "apprentices",
+            _ => "warriors"
+        };
     }
 }

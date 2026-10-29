@@ -43,6 +43,25 @@ public static class Report {
         var shares = results.SelectMany(r => r.Top20CatchShare).ToList();
         if (shares.Count > 0)
             Console.WriteLine($"  the best 20% of hunters catch {shares.Average() * 100:0}% of the mice");
+
+        Console.WriteLine();
+        Console.WriteLine("Skill faded below the peak (living cats, checked yearly):");
+        var groups = results.SelectMany(r => r.FadedBelowPeak).GroupBy(g => g.Key);
+        foreach (var group in groups.OrderBy(g => g.Key)) {
+            var faded = group.SelectMany(g => g.Value).ToList();
+            var share = faded.Count(f => f > 0.5f) * 100f / faded.Count;
+            Console.WriteLine($"  {group.Key + ":",-25} mean {faded.Average():0.0}, max {faded.Max():0}, "
+                              + $"{share:0}% faded noticeably");
+        }
+
+        var rusty = results.SelectMany(r => r.RustyTimes).ToList();
+        if (rusty.Count > 0) {
+            var moons = rusty.Select(r => (float)r.Moons).OrderBy(m => m).ToList();
+            Console.WriteLine($"  hunters who got rusty: {rusty.Count / (float)seeds:0} times per run, "
+                              + $"lost {rusty.Average(r => r.Lost):0.0} points (max {rusty.Max(r => r.Lost):0}), "
+                              + $"back at their peak after {moons.Average():0.0} moons (90%: {Percentile(moons, 0.9f):0}, "
+                              + $"max {moons[^1]:0})");
+        }
     }
 
     private static string Check(bool ok) {
