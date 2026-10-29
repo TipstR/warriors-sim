@@ -289,6 +289,7 @@ public partial class World {
     ///     where to look (its healing skill).
     /// </summary>
     private void GatherHerbs(Cat gatherer) {
+        Healing(gatherer).Practice();
         var skill = 0.5f + 0.5f * Healing(gatherer).Level / Tuning.SkillMax;
         foreach (var herb in Enum.GetValues<Herb>()) {
             var doses = (float)_random.NextDouble() * 2f * Tuning.HerbsPerTrip

@@ -78,6 +78,7 @@ public partial class World {
 
             if (Day % Tuning.DaysPerMoon == 0) {
                 AgeOneMoon();
+                FadeUnusedSkills();
                 FindMates();
                 ConceiveKits();
                 LogMoonSummary();
@@ -333,6 +334,16 @@ public partial class World {
     }
 
     /// <summary>
+    ///     Use it or lose it: every skill a cat didn't practice this moon fades a little (see <see cref="Skill.FadeIfUnused" />).
+    ///     Apprentices don't lose anything, because their training counts as practice.
+    /// </summary>
+    private void FadeUnusedSkills() {
+        foreach (var cat in Clan.Cats)
+        foreach (var skill in cat.Skills.Values)
+            skill.FadeIfUnused();
+    }
+
+    /// <summary>
     ///     Apprentices whose mentor has died, retired or moved to the nursery get a new one.
     ///     If none is free, they keep their old mentor, who takes them back when able again.
     /// </summary>
@@ -576,8 +587,10 @@ public partial class World {
     /// <summary>
     ///     Rolls every hunting attempt of one cat and returns how many mice it caught.
     ///     Every mouse it catches teaches it a little (<see cref="Tuning.HuntingPracticePerMouse" />).
+    ///     Going hunting is practice even without a catch, so the skill doesn't fade.
     /// </summary>
     private int Hunt(Cat cat) {
+        cat.Skills[SkillType.Hunting].Practice();
         var caught = 0;
         for (var i = 0; i < Tuning.AttemptsPerCat; i++) {
             // The territory only has so much prey per day, and less in bad seasons.

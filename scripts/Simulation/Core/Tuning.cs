@@ -31,6 +31,23 @@ public static class Tuning {
     // Skills and traits
     [TuningGroup("Skills")] public static int AverageDiligence = 50;
 
+    /// <summary>
+    ///     How many points a skill loses in a moon in which the cat didn't use it (use it or lose it), e.g. a queen in
+    ///     the nursery or an elder who doesn't hunt. See <see cref="Skill.FadeIfUnused" />.
+    /// </summary>
+    [TuningGroup("Skills")] public static float SkillFadePerMoon = 1f;
+
+    /// <summary>A skill never fades below this share of the best level the cat ever had (0.5 = half).</summary>
+    [TuningGroup("Skills")] public static float SkillFadeFloorShare = 0.5f;
+
+    /// <summary>
+    ///     How much faster a cat learns while its skill is below the best level it ever had. Getting rusty after a
+    ///     sickness or a moon in the nursery isn't permanent: a skill comes back much faster than it was learned.
+    ///     Tested with 100 seeds × 30 years: with 10, a rusty hunter has lost ~2 points and is back at its peak after
+    ///     about 3 moons (1: 15 moons). Elders, who don't hunt, still fade (~6 points on average).
+    /// </summary>
+    [TuningGroup("Skills")] public static float RelearnFactor = 10f;
+
     // Aging and ranks
     [TuningGroup("Aging")] public static int ApprenticeAgeMoons = 6;
     [TuningGroup("Aging")] public static int WarriorAgeMoons = 12;
