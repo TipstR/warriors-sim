@@ -11,7 +11,6 @@ public partial class Player : Area2D {
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
-    private string _lastDirection;
     public override void _Process(double delta) {
         var velocity = Vector2.Zero;
         
@@ -33,53 +32,13 @@ public partial class Player : Area2D {
         
         
             
-        // Animation
-        var animatedSprite2D = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
-        
-        string vertical = velocity.Y > 0 ? "south" : (velocity.Y < 0 ? "north" : "");
-        string horizontal = velocity.X > 0 ? "east" : (velocity.X < 0 ? "west" : "");
-        
-        string direction = "";
-        if (vertical != "" && horizontal != "")
-        {
-            direction = $"{vertical}_{horizontal}";
-
-            if (horizontal != "") {
-                _lastDirection = horizontal;
-            }
-            else {
-                _lastDirection = vertical;
-            }
-        }
-        else if (vertical != "" ^ horizontal != "") {
-            direction = vertical + horizontal; 
-            
-            if (horizontal != "") {
-                _lastDirection = horizontal;
-            }
-            else {
-                _lastDirection = vertical;
-            }
-        }
-
-        
-        
-
-        if (velocity.Length() > 0)
-        {
+        if (velocity.Length() > 0) {
             velocity = velocity.Normalized() * Speed;
-            animatedSprite2D.Play($"walk_{direction}");
-            animatedSprite2D.Play();
         }
-        else
-        {
-            if (_lastDirection != "") {
-                animatedSprite2D.Play($"sitting_{_lastDirection}");
-            }
-            
-            animatedSprite2D.Stop();
-        }
-        
+
+        // Animation (shared with the simulated cats, see CatSprite)
+        GetNode<CatSprite>("AnimatedSprite2D").Animate(velocity);
+
         Position += velocity * (float)delta;
         Position = new Vector2(
             x: Mathf.Clamp(Position.X, 0, ScreenSize.X),
