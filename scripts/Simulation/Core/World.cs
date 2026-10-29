@@ -20,6 +20,12 @@ public partial class World {
     private int _birthsThisMoon;
     private int _ticksWithoutFamineHunger;
 
+    /// <summary>Cats whose main skill (hunting, or healing for medicine cats) has faded and not come back yet.</summary>
+    private readonly HashSet<Cat> _feelsRusty = new();
+
+    /// <summary>A cat feels rusty (in the log) once its main skill is this many points below its best.</summary>
+    private const float RustyPoints = 2f;
+
     // Statistics for the moon summary
     private int _miceCaughtThisMoon;
     private int _timesStarvedThisMoon;
@@ -156,7 +162,7 @@ public partial class World {
             var sex = _random.Next(2) == 0 ? Sex.SheCat : Sex.Tom;
             var diligence = _random.Next(Tuning.SkillMin + 20, Tuning.SkillMax - 19);
             var huntingGift = RollGift(mother.Skills[SkillType.Hunting].Gift, FathersGift(father, SkillType.Hunting));
-            var mentoringGift = RollGift(mother.MentoringGift, father?.MentoringGift);
+            var mentoringGift = RollGift(mother.Skills[SkillType.Mentoring].Gift, FathersGift(father, SkillType.Mentoring));
             var kit = new Cat(prefix + CatNames.KitSuffix, Rank.Kit, sex, 0, 0, diligence,
                 huntingGift, mentoringGift, mother, father);
             var healingGift = RollHealingGift(mother.Skills[SkillType.Healing].Gift,
@@ -323,24 +329,45 @@ public partial class World {
     }
 
     /// <summary>
-    ///     An apprentice learns every moon. How much depends on its hunting gift and on its mentor.
-    ///     Without a mentor it only learns a little on its own.
+    ///     An apprentice learns in camp every moon. How much depends on its hunting gift and on its mentor.
+    ///     Without a mentor it only learns a little on its own. The other half of its training are the lessons on
+    ///     training patrols (see <see cref="SendTrainingPatrols" />), where the mentor gets better at mentoring.
     /// </summary>
     private void Train(Cat apprentice) {
         var mentor = IsAbleToMentor(apprentice.Mentor) ? apprentice.Mentor : null;
         var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
         apprentice.Skills[SkillType.Hunting].Improve(Tuning.ApprenticeHuntingGainPerMoon * mentorFactor);
-        mentor?.MentorOneMoon();
     }
 
     /// <summary>
     ///     Use it or lose it: every skill a cat didn't practice this moon fades a little (see <see cref="Skill.FadeIfUnused" />).
-    ///     Apprentices don't lose anything, because their training counts as practice.
+    ///     Apprentices don't lose anything, because their training counts as practice. Mentoring never fades: a cat
+    ///     can only practice it with an apprentice, so a warrior who waits long for one would be punished for it.
+    ///     Tells the story when a cat feels rusty and when it is back to its old self.
     /// </summary>
     private void FadeUnusedSkills() {
-        foreach (var cat in Clan.Cats)
-        foreach (var skill in cat.Skills.Values)
-            skill.FadeIfUnused();
+        foreach (var cat in Clan.Cats) {
+            foreach (var (type, skill) in cat.Skills)
+                if (type != SkillType.Mentoring)
+                    skill.FadeIfUnused();
+
+            // Elders stop hunting for good, that's no story
+            if (cat.Rank is Rank.Kit or Rank.Elder)
+                continue;
+
+            var mainSkill = cat.IsMedicineCat ? SkillType.Healing : SkillType.Hunting;
+            var level = cat.Skills[mainSkill];
+            if (level.Peak - level.Level >= RustyPoints && _feelsRusty.Add(cat))
+                Log(mainSkill == SkillType.Healing
+                    ? $"{cat.Name} hasn't cared for anyone in a while and feels rusty."
+                    : $"{cat.Name} hasn't hunted in a while and feels rusty.", LogLevel.Summary);
+            else if (level.Level >= level.Peak && _feelsRusty.Remove(cat))
+                Log($"{cat.Name} is back to {(mainSkill == SkillType.Healing ? "healing" : "hunting")} as well as ever.",
+                    LogLevel.Summary);
+        }
+
+        // Dead cats don't need to be remembered
+        _feelsRusty.RemoveWhere(c => !Clan.Cats.Contains(c));
     }
 
     /// <summary>
@@ -365,15 +392,16 @@ public partial class World {
 
     /// <summary>
     ///     The leader chooses a mentor among the cats who can mentor and don't have an apprentice yet.
-    ///     The leader can't see who has a gift for mentoring, so good hunters and cats who have mentored before
-    ///     are more likely to be chosen, but every free cat has a chance. Later the leader's personality will decide.
+    ///     The leader can't see who has a gift for mentoring, but sees who hunts well and who taught well before,
+    ///     so good hunters and good mentors are more likely to be chosen, but every free cat has a chance.
+    ///     Later the leader's personality will decide.
     ///     Returns the new mentor, or null (and changes nothing) if no cat is free.
     /// </summary>
     private Cat FindMentor(Cat apprentice) {
         var mentor = Clan.Cats
             .Where(c => c.CanMentor && Clan.ApprenticeOf(c) == null)
-            .OrderByDescending(c =>
-                (float)c.Skills[SkillType.Hunting].Level / Tuning.SkillMax + c.MentoringExperience + (float)_random.NextDouble())
+            .OrderByDescending(c => (c.Skills[SkillType.Hunting].Level + c.Skills[SkillType.Mentoring].Level) / Tuning.SkillMax
+                                    + (float)_random.NextDouble())
             .FirstOrDefault();
 
         if (mentor != null)
@@ -518,24 +546,21 @@ public partial class World {
     }
 
     /// <summary>
-    ///     If the pile has fewer mice than there are cats, the leader sends patrols
-    ///     until they are expected to catch enough to make up the difference.
-    ///     The leader plans with normal hunting chances and doesn't account for the
+    ///     Outside a famine, the leader first sends the apprentices out on training patrols, even if the pile is full
+    ///     (see <see cref="SendTrainingPatrols" />). Then, if the pile has fewer mice than there are cats, the leader
+    ///     sends patrols until they are expected to catch enough to make up the difference, the training patrols'
+    ///     catch included. The leader plans with normal hunting chances and doesn't account for the
     ///     season, so patrols bring back more than expected in greenleaf and less in leaf-bare.
     /// </summary>
     private void SendHuntingPatrolsIfNeeded() {
-        var miceNeeded = Clan.Cats.Count - Clan.FreshKillPile.Mice;
-        if (miceNeeded <= 0)
-            return;
-
         var available = AvailableHunters();
-        if (available.Count == 0) {
-            Log("The pile is low, but no cat can hunt.");
-            return;
-        }
+        var hunters = Clan.IsInFamine ? new List<Cat>() : SendTrainingPatrols(available);
+        var expectedCatch = hunters.Sum(c => c.CatchChance * Tuning.AttemptsPerCat);
 
-        var hunters = new List<Cat>();
-        var expectedCatch = 0f;
+        var miceNeeded = Clan.Cats.Count - Clan.FreshKillPile.Mice;
+        if (miceNeeded > 0 && hunters.Count == 0 && available.Count == 0)
+            Log("The pile is low, but no cat can hunt.");
+
         while (expectedCatch < miceNeeded * Tuning.PatrolPlanningMargin && available.Count > 0) {
             var patrol = available.Take(Tuning.PatrolSize).ToList();
             available.RemoveRange(0, patrol.Count);
@@ -545,7 +570,73 @@ public partial class World {
             hunters.AddRange(patrol);
         }
 
-        _lastHunters = hunters;
+        if (hunters.Count > 0)
+            _lastHunters = hunters;
+    }
+
+    /// <summary>
+    ///     Every apprentice who can hunt goes out with a teacher, two pairs per patrol. The leader pairs each
+    ///     apprentice with its mentor. If the mentor can't go (asleep, sick, hunted last time, ...), another warrior
+    ///     helps out, preferably one without an apprentice of its own. Apprentices without a teacher stay with the
+    ///     normal patrols. Removes everyone it sends from <paramref name="available" /> and returns them.
+    /// </summary>
+    private List<Cat> SendTrainingPatrols(List<Cat> available) {
+        var apprentices = available.Where(c => c.Rank == Rank.Apprentice).ToList();
+        var pairs = new List<(Cat Apprentice, Cat Teacher)>();
+
+        // First every apprentice whose mentor can come, so no helper takes a mentor away from its own apprentice
+        foreach (var apprentice in apprentices.Where(a => available.Contains(a.Mentor)).ToList()) {
+            pairs.Add((apprentice, apprentice.Mentor));
+            available.Remove(apprentice);
+            available.Remove(apprentice.Mentor);
+            apprentices.Remove(apprentice);
+        }
+
+        foreach (var apprentice in apprentices) {
+            var helper = ChooseHelper(available);
+            if (helper == null)
+                break;
+            pairs.Add((apprentice, helper));
+            available.Remove(apprentice);
+            available.Remove(helper);
+        }
+
+        var sent = new List<Cat>();
+        foreach (var patrolPairs in pairs.Chunk(Tuning.PatrolSize / 2)) {
+            var lessons = patrolPairs.Select(p => p.Teacher == p.Apprentice.Mentor
+                ? $"{p.Apprentice.Name} with {p.Teacher.Name}"
+                : $"{p.Apprentice.Name} with {p.Teacher.Name} (helping out)");
+            Log($"Training patrol: {string.Join(", ", lessons)}.");
+
+            var patrol = patrolPairs.SelectMany(p => new[] { p.Apprentice, p.Teacher }).ToList();
+            SendHuntingPatrol(patrol);
+            foreach (var (apprentice, teacher) in patrolPairs)
+                GiveLesson(apprentice, teacher);
+            sent.AddRange(patrol);
+        }
+
+        return sent;
+    }
+
+    /// <summary>A warrior who can teach, preferably one without an apprentice of its own. Null if nobody is free.</summary>
+    private Cat ChooseHelper(List<Cat> available) {
+        var candidates = available.Where(c => c.CanMentor).ToList();
+        if (candidates.Count == 0)
+            return null;
+
+        var withoutApprentice = candidates.Where(c => Clan.ApprenticeOf(c) == null).ToList();
+        var choices = withoutApprentice.Count > 0 ? withoutApprentice : candidates;
+        return choices[_random.Next(choices.Count)];
+    }
+
+    /// <summary>
+    ///     On a training patrol the apprentice learns hunting (the better the teacher, the more), and the teacher gets
+    ///     better at mentoring. A helper learns less than the real mentor (<see cref="Tuning.HelperMentoringShare" />).
+    /// </summary>
+    private static void GiveLesson(Cat apprentice, Cat teacher) {
+        apprentice.Skills[SkillType.Hunting].Improve(Tuning.HuntingLessonGain * teacher.MentorFactor);
+        var share = teacher == apprentice.Mentor ? 1f : Tuning.HelperMentoringShare;
+        teacher.Skills[SkillType.Mentoring].Improve(Tuning.MentoringPracticePerLesson * share);
     }
 
     /// <summary>

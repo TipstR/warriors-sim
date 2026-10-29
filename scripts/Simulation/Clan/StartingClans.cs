@@ -8,22 +8,22 @@ public static class StartingClans {
     public static Clan CreateThunderClan() {
         var clan = new Clan("ThunderClan");
 
-        var frostfur = new Cat("Frostfur", Rank.Warrior, Sex.SheCat, 50, 40, 60, 45, 55) { MoonsMentored = 6 };
+        var frostfur = new Cat("Frostfur", Rank.Warrior, Sex.SheCat, 50, 40, 60, 45, 55);
         var brindleface = new Cat("Brindleface", Rank.Warrior, Sex.SheCat, 40, 50, 60, 50, 60);
 
-        // Gifts: 50 = average. Mentored: moons spent training apprentices before the game starts.
+        // Gifts: 50 = average. How well they mentor right now is set further down.
         // Healing gifts are rare, so everyone without one set below has the low average (Tuning.AverageHealingGift).
         //                  name           rank             sex          age  hunting  diligence  gift: hunting  mentoring
-        clan.AddCat(new Cat("Bluestar",    Rank.Leader,     Sex.SheCat,  110, 70,      80,              70,      75) { MoonsMentored = 30 });
-        clan.AddCat(new Cat("Redtail",     Rank.Deputy,     Sex.Tom,     60,  65,      75,              65,      65) { MoonsMentored = 12 });
+        clan.AddCat(new Cat("Bluestar",    Rank.Leader,     Sex.SheCat,  110, 70,      80,              70,      75));
+        clan.AddCat(new Cat("Redtail",     Rank.Deputy,     Sex.Tom,     60,  65,      75,              65,      65));
         clan.AddCat(new Cat("Spottedleaf", Rank.MedicineCat, Sex.SheCat, 20,  45,      80,              45,      60));
         // A great hunter, but a bad mentor (ask Ravenpaw)
-        clan.AddCat(new Cat("Tigerclaw",   Rank.Warrior,    Sex.Tom,     50,  85,      90,              90,      15) { MoonsMentored = 8 });
-        clan.AddCat(new Cat("Lionheart",   Rank.Warrior,    Sex.Tom,     70,  70,      70,              70,      85) { MoonsMentored = 30 });
-        clan.AddCat(new Cat("Whitestorm",  Rank.Warrior,    Sex.Tom,     65,  75,      70,              75,      80) { MoonsMentored = 24 });
-        clan.AddCat(new Cat("Runningwind", Rank.Warrior,    Sex.Tom,     70,  70,      70,              70,      50) { MoonsMentored = 6 });
+        clan.AddCat(new Cat("Tigerclaw",   Rank.Warrior,    Sex.Tom,     50,  85,      90,              90,      15));
+        clan.AddCat(new Cat("Lionheart",   Rank.Warrior,    Sex.Tom,     70,  70,      70,              70,      85));
+        clan.AddCat(new Cat("Whitestorm",  Rank.Warrior,    Sex.Tom,     65,  75,      70,              75,      80));
+        clan.AddCat(new Cat("Runningwind", Rank.Warrior,    Sex.Tom,     70,  70,      70,              70,      50));
         clan.AddCat(new Cat("Willowpelt",  Rank.Warrior,    Sex.SheCat,  30,  66,      50,              65,      55));
-        clan.AddCat(new Cat("Mousefur",    Rank.Warrior,    Sex.SheCat,  115, 55,      75,              55,      45) { MoonsMentored = 12 });
+        clan.AddCat(new Cat("Mousefur",    Rank.Warrior,    Sex.SheCat,  115, 55,      75,              55,      45));
         clan.AddCat(frostfur);
         clan.AddCat(brindleface);
         clan.AddCat(new Cat("Darkstripe",  Rank.Warrior,    Sex.Tom,     40,  55,      30,              55,      25));
@@ -51,6 +51,22 @@ public static class StartingClans {
         Find("Graypaw").SetMentor(Find("Lionheart"));
         Find("Dustpaw").SetMentor(Find("Redtail"));
         Find("Sandpaw").SetMentor(Find("Whitestorm"));
+
+        // Mentoring: cats who have taught before. Everyone else starts at Tuning.StartingMentoring.
+        void SetMentoring(string name, float level) {
+            var cat = Find(name);
+            cat.SetSkill(SkillType.Mentoring, level, cat.Skills[SkillType.Mentoring].Gift);
+        }
+
+        SetMentoring("Bluestar", 75);
+        SetMentoring("Lionheart", 80);
+        SetMentoring("Whitestorm", 75);
+        SetMentoring("Redtail", 50);
+        SetMentoring("Runningwind", 35);
+        SetMentoring("Mousefur", 35);
+        SetMentoring("Frostfur", 35);
+        SetMentoring("Spottedleaf", 35);
+        SetMentoring("Tigerclaw", 25);
 
         // Healing: Spottedleaf is the medicine cat. Cinderkit has a gift for healing, like in the books.
         // Whether she becomes a medicine cat is up to the simulation.

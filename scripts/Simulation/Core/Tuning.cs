@@ -33,7 +33,7 @@ public static class Tuning {
 
     /// <summary>
     ///     How many points a skill loses in a moon in which the cat didn't use it (use it or lose it), e.g. a queen in
-    ///     the nursery or an elder who doesn't hunt. See <see cref="Skill.FadeIfUnused" />.
+    ///     the nursery or an elder who doesn't hunt. Mentoring never fades. See <see cref="Skill.FadeIfUnused" />.
     /// </summary>
     [TuningGroup("Skills")] public static float SkillFadePerMoon = 1f;
 
@@ -56,12 +56,13 @@ public static class Tuning {
     [TuningGroup("Aging")] public static int RetireAgeMoons = 120;
 
     /// <summary>
-    ///     How much an apprentice's hunting skill improves every moon of training, before its gift, its mentor and the
-    ///     difficulty of the next levels are applied (see <see cref="Skill.Improve" />). Each level is harder than the
-    ///     one before, so an apprentice learns less every moon. Tuned so that the average new warrior has about
-    ///     50 hunting. Careful: the Clan's survival is very sensitive to that average.
+    ///     How much an apprentice's hunting skill improves every moon of training in camp, before its gift, its mentor
+    ///     and the difficulty of the next levels are applied (see <see cref="Skill.Improve" />). Each level is harder
+    ///     than the one before, so an apprentice learns less every moon. The other half of the training are the
+    ///     lessons on training patrols (<see cref="HuntingLessonGain" />). Tuned so that the average new warrior has
+    ///     about 54 hunting. Careful: the Clan's survival is very sensitive to that average.
     /// </summary>
-    [TuningGroup("Aging")] public static float ApprenticeHuntingGainPerMoon = 10.5f;
+    [TuningGroup("Aging")] public static float ApprenticeHuntingGainPerMoon = 5.25f;
 
     /// <summary>From this age on, a cat can die of old age (96 moons = 8 years).</summary>
     [TuningGroup("Aging")] public static int OldAgeStartMoons = 96;
@@ -121,11 +122,39 @@ public static class Tuning {
     /// <summary>How fast an apprentice learns when no warrior is free to mentor it.</summary>
     [TuningGroup("Mentors")] public static float NoMentorFactor = 0.3f;
 
-    /// <summary>A mentor who has never mentored before only teaches with this share of its mentoring gift.</summary>
-    [TuningGroup("Mentors")] public static float InexperiencedMentorShare = 0.6f;
+    /// <summary>
+    ///     The mentoring skill every cat starts with. A new warrior who never taught teaches a bit worse than an
+    ///     average mentor (20 = <see cref="Cat.MentorFactor" /> 0.7 with the default values).
+    /// </summary>
+    [TuningGroup("Mentors")] public static float StartingMentoring = 20f;
 
-    /// <summary>After this many moons of mentoring, a mentor teaches with its full gift (24 = about four apprentices).</summary>
-    [TuningGroup("Mentors")] public static int MoonsToExperiencedMentor = 24;
+    /// <summary>
+    ///     How much an apprentice's hunting skill improves with every lesson on a training patrol, before its gift,
+    ///     its teacher's <see cref="Cat.MentorFactor" /> and the difficulty. Together with
+    ///     <see cref="ApprenticeHuntingGainPerMoon" />, tuned so that the average new warrior has about 54 hunting.
+    ///     An apprentice gets about 37 lessons a moon, so this is a bit more than half of its training.
+    ///     Tested with 100 seeds × 30 years: 0.158 gives new warriors ~54 hunting, 0 of 100 Clans died out.
+    ///     Very sensitive: new warriors at 50.5 let 4 of 100 Clans die out, at 47 13, at 43 49 of 100.
+    /// </summary>
+    [TuningGroup("Mentors")] public static float HuntingLessonGain = 0.158f;
+
+    /// <summary>
+    ///     How much a mentor's mentoring skill improves with every lesson it gives, before its gift and the difficulty.
+    ///     With 0.06, mentors average ~42 mentoring and the best 10% have 85+.
+    /// </summary>
+    [TuningGroup("Mentors")] public static float MentoringPracticePerLesson = 0.06f;
+
+    /// <summary>
+    ///     A warrior who helps out for a hindered mentor learns this share of what the real mentor would
+    ///     (0.5 = half). It's only a stand-in, but young warriors without an apprentice get some practice this way.
+    /// </summary>
+    [TuningGroup("Mentors")] public static float HelperMentoringShare = 0.5f;
+
+    /// <summary>
+    ///     How much a medicine cat's mentoring skill improves every moon it trains a medicine cat apprentice. Medicine
+    ///     cats don't go on training patrols, so they learn by the moon.
+    /// </summary>
+    [TuningGroup("Mentors")] public static float MedicineMentoringPracticePerMoon = 1.5f;
 
     // Medicine cats
     /// <summary>A medicine cat apprentice becomes a full medicine cat at this age. Longer than a warrior's training.</summary>

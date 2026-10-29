@@ -114,7 +114,7 @@ public partial class World {
 
         var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
         Healing(apprentice).Improve(Tuning.MedicineApprenticeHealingGainPerMoon * mentorFactor);
-        mentor?.MentorOneMoon();
+        mentor?.Skills[SkillType.Mentoring].Improve(Tuning.MedicineMentoringPracticePerMoon);
     }
 
     /// <summary>

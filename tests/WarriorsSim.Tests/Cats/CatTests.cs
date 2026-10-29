@@ -32,5 +32,24 @@ public class CatTests {
 
         Assert.Equal(elder.Frailty, leader.Frailty);
     }
-    
+
+    // Mentoring Test
+    [Theory]
+    [InlineData(0, 0.5f)] // WorstMentorFactor
+    [InlineData(50, 1f)]
+    [InlineData(100, 1.5f)] // BestMentorFactor
+    public void MentorFactor_DependsOnMentoringSkill(float mentoring, float expected) {
+        var cat = new Cat("Lionheart", Rank.Warrior, Sex.Tom, 70, 70, 70);
+        cat.SetSkill(SkillType.Mentoring, mentoring, 50);
+
+        Assert.Equal(expected, cat.MentorFactor, 3);
+    }
+
+    [Fact]
+    public void Mentoring_NewCatStartsAtStartingMentoring() {
+        var cat = new Cat("Sandstorm", Rank.Warrior, Sex.SheCat, 12, 50, 50, mentoringGift: 80);
+
+        Assert.Equal(Tuning.StartingMentoring, cat.Skills[SkillType.Mentoring].Level, 3);
+        Assert.Equal(80, cat.Skills[SkillType.Mentoring].Gift);
+    }
 }

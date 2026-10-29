@@ -5,7 +5,6 @@ using System.Linq;
 namespace WarriorsSim.Simulation;
 
 public class Cat {
-    private int _moonsMentored;
     private readonly Dictionary<SkillType, Skill> _skills;
     private readonly List<Condition> _conditions = new();
 
@@ -22,9 +21,9 @@ public class Cat {
         Diligence = Math.Clamp(diligence, Tuning.SkillMin, Tuning.SkillMax);
         _skills = new Dictionary<SkillType, Skill> {
             [SkillType.Hunting] = new(hunting, huntingGift),
-            [SkillType.Healing] = new(0, Tuning.AverageHealingGift)
+            [SkillType.Healing] = new(0, Tuning.AverageHealingGift),
+            [SkillType.Mentoring] = new(Tuning.StartingMentoring, mentoringGift)
         };
-        MentoringGift = Math.Clamp(mentoringGift, Tuning.SkillMin, Tuning.SkillMax);
         Mother = mother;
         Father = father;
         Satiation = Tuning.SatiationMax;
@@ -81,7 +80,8 @@ public class Cat {
     /// <summary>
     ///     Every skill the cat has, with its level and gift, e.g. <c>cat.Skills[SkillType.Hunting].Level</c>.
     ///     A new cat gets its hunting from the constructor. Healing starts at 0 with the low average gift
-    ///     (<see cref="Tuning.AverageHealingGift" />), because a gift for healing is rare.
+    ///     (<see cref="Tuning.AverageHealingGift" />), because a gift for healing is rare. Mentoring starts at
+    ///     <see cref="Tuning.StartingMentoring" /> with the mentoring gift from the constructor.
     /// </summary>
     public IReadOnlyDictionary<SkillType, Skill> Skills => _skills;
 
@@ -96,38 +96,18 @@ public class Cat {
     /// <summary>How hard-working the cat is. Lazy cats hunt worse.</summary>
     public int Diligence { get; }
 
-    /// <summary>How gifted the cat was born for teaching. Some cats are just bad mentors, however long they mentor.</summary>
-    public int MentoringGift { get; }
-
     public bool IsMedicineCat => Rank is Rank.MedicineCat or Rank.MedicineCatApprentice;
 
     /// <summary>The cat that trains this apprentice, or trained this warrior. Null if the cat never had one.</summary>
     public Cat Mentor { get; private set; }
 
-    /// <summary>How many moons the cat has spent training apprentices. Can be set for cats that start the game.</summary>
-    public int MoonsMentored {
-        get => _moonsMentored;
-        init => _moonsMentored = value;
-    }
-
-    /// <summary>From 0 (never mentored) to 1 (fully experienced, see <see cref="Tuning.MoonsToExperiencedMentor" />).</summary>
-    public float MentoringExperience => Math.Min(1f, (float)MoonsMentored / Tuning.MoonsToExperiencedMentor);
-
     /// <summary>
-    ///     How well the cat teaches, from 0 (worst) to 1 (best). It's the cat's mentoring gift, but an inexperienced
-    ///     mentor only reaches <see cref="Tuning.InexperiencedMentorShare" /> of it.
+    ///     How much faster (above 1) or slower (below 1) an apprentice learns when this cat teaches it, from its
+    ///     mentoring skill: <see cref="Tuning.WorstMentorFactor" /> at 0, <see cref="Tuning.BestMentorFactor" /> at 100.
     /// </summary>
-    public float MentoringQuality {
-        get {
-            var share = Tuning.InexperiencedMentorShare
-                        + (1f - Tuning.InexperiencedMentorShare) * MentoringExperience;
-            return (float)MentoringGift / Tuning.SkillMax * share;
-        }
-    }
-
-    /// <summary>How much faster (above 1) or slower (below 1) this cat's apprentice learns, from its mentoring quality.</summary>
     public float MentorFactor =>
-        Tuning.WorstMentorFactor + (Tuning.BestMentorFactor - Tuning.WorstMentorFactor) * MentoringQuality;
+        Tuning.WorstMentorFactor
+        + (Tuning.BestMentorFactor - Tuning.WorstMentorFactor) * Skills[SkillType.Mentoring].Level / Tuning.SkillMax;
 
     /// <summary>Warriors, the deputy and the leader can mentor, but not while they are in the nursery.</summary>
     public bool CanMentor => Rank is Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery;
@@ -370,11 +350,6 @@ public class Cat {
 
     public void SetMentor(Cat mentor) {
         Mentor = mentor;
-    }
-
-    /// <summary>The cat has trained an apprentice for one more moon and gains experience as a mentor.</summary>
-    public void MentorOneMoon() {
-        _moonsMentored++;
     }
 
     /// <summary>

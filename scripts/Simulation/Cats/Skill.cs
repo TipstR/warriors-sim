@@ -7,7 +7,10 @@ public enum SkillType {
     Hunting,
 
     /// <summary>Medicine cats learn it from their mentor and by caring for the sick, other cats a little as patients.</summary>
-    Healing
+    Healing,
+
+    /// <summary>How well the cat teaches an apprentice. Learned by teaching, see <see cref="Cat.MentorFactor" />.</summary>
+    Mentoring
 }
 
 /// <summary>
