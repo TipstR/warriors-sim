@@ -311,12 +311,7 @@ public partial class World {
                 Log($"{kitName} has become an apprentice: {cat.Name}. {mentorText}", LogLevel.Summary);
             }
             else if (cat.Rank == Rank.Apprentice && cat.AgeMoons >= Tuning.WarriorAgeMoons) {
-                var apprenticeName = cat.Name;
-                var otherNames = Clan.Cats.Where(c => c != cat).Select(c => c.Name);
-                cat.ChangeRank(Rank.Warrior, CatNames.RandomWarriorSuffix(cat.Prefix, otherNames, _random));
-                var mentorText = cat.Mentor != null ? $", trained by {cat.Mentor.Name}" : "";
-                Log($"{apprenticeName} has become a warrior: {cat.Name} (hunting {cat.Skills[SkillType.Hunting].Level:0}{mentorText}).",
-                    LogLevel.Summary);
+                HoldWarriorCeremony(cat);
             }
             else if (cat.Rank == Rank.MedicineCatApprentice && cat.AgeMoons >= Tuning.MedicineCatAgeMoons) {
                 MakeMedicineCat(cat);
@@ -336,7 +331,40 @@ public partial class World {
     private void Train(Cat apprentice) {
         var mentor = IsAbleToMentor(apprentice.Mentor) ? apprentice.Mentor : null;
         var mentorFactor = mentor?.MentorFactor ?? Tuning.NoMentorFactor;
-        apprentice.Skills[SkillType.Hunting].Improve(Tuning.ApprenticeHuntingGainPerMoon * mentorFactor);
+        apprentice.Skills[SkillType.Hunting].Improve(
+            Tuning.ApprenticeHuntingGainPerMoon * mentorFactor * Motivation(apprentice));
+    }
+
+    /// <summary>
+    ///     How much harder an apprentice trains because it is past the warrior age and still has no warrior name:
+    ///     1 until <see cref="Tuning.WarriorAgeMoons" />, then <see cref="Tuning.MotivationPerMoon" /> more every moon.
+    /// </summary>
+    private static float Motivation(Cat apprentice) {
+        var moonsLate = Math.Max(0, apprentice.AgeMoons - Tuning.WarriorAgeMoons);
+        return 1f + Tuning.MotivationPerMoon * moonsLate;
+    }
+
+    /// <summary>
+    ///     An apprentice old enough to be a warrior gets its warrior name, if it hunts well enough
+    ///     (<see cref="Tuning.MinHuntingForWarrior" />). Otherwise it stays an apprentice and trains harder.
+    /// </summary>
+    private void HoldWarriorCeremony(Cat apprentice) {
+        var hunting = apprentice.Skills[SkillType.Hunting].Level;
+        if (hunting < Tuning.MinHuntingForWarrior) {
+            if (apprentice.AgeMoons == Tuning.WarriorAgeMoons)
+                Log($"{apprentice.Name} is old enough to become a warrior, but doesn't hunt well enough yet "
+                    + $"(hunting {hunting:0} of {Tuning.MinHuntingForWarrior:0}). {apprentice.Name} trains harder than ever.",
+                    LogLevel.Summary);
+            return;
+        }
+
+        var apprenticeName = apprentice.Name;
+        var otherNames = Clan.Cats.Where(c => c != apprentice).Select(c => c.Name);
+        apprentice.ChangeRank(Rank.Warrior, CatNames.RandomWarriorSuffix(apprentice.Prefix, otherNames, _random));
+        var mentorText = apprentice.Mentor != null ? $", trained by {apprentice.Mentor.Name}" : "";
+        var lateText = apprentice.AgeMoons > Tuning.WarriorAgeMoons ? $", at last, at {apprentice.AgeMoons} moons" : "";
+        Log($"{apprenticeName} has become a warrior: {apprentice.Name} (hunting {hunting:0}{mentorText}{lateText}).",
+            LogLevel.Summary);
     }
 
     /// <summary>
@@ -630,11 +658,13 @@ public partial class World {
     }
 
     /// <summary>
-    ///     On a training patrol the apprentice learns hunting (the better the teacher, the more), and the teacher gets
-    ///     better at mentoring. A helper learns less than the real mentor (<see cref="Tuning.HelperMentoringShare" />).
+    ///     On a training patrol the apprentice learns hunting (the better the teacher and the more motivated the
+    ///     apprentice, the more), and the teacher gets better at mentoring. A helper learns less than the real mentor
+    ///     (<see cref="Tuning.HelperMentoringShare" />).
     /// </summary>
     private static void GiveLesson(Cat apprentice, Cat teacher) {
-        apprentice.Skills[SkillType.Hunting].Improve(Tuning.HuntingLessonGain * teacher.MentorFactor);
+        apprentice.Skills[SkillType.Hunting].Improve(
+            Tuning.HuntingLessonGain * teacher.MentorFactor * Motivation(apprentice));
         var share = teacher == apprentice.Mentor ? 1f : Tuning.HelperMentoringShare;
         teacher.Skills[SkillType.Mentoring].Improve(Tuning.MentoringPracticePerLesson * share);
     }

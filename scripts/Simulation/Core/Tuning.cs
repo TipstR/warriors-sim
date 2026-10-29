@@ -52,6 +52,22 @@ public static class Tuning {
     [TuningGroup("Aging")] public static int ApprenticeAgeMoons = 6;
     [TuningGroup("Aging")] public static int WarriorAgeMoons = 12;
 
+    /// <summary>
+    ///     An apprentice only becomes a warrior once its hunting skill has reached this. Until then it stays an
+    ///     apprentice, however old it is, but trains harder every moon (<see cref="MotivationPerMoon" />).
+    ///     Tested with 100 seeds × 30 years: with 40, 17% of apprentices are late, most by one or two moons, the
+    ///     latest at 19 moons. With 50: 40% late, the latest at 20 moons, and new warriors average 60 instead of 56.
+    /// </summary>
+    [TuningGroup("Aging")] public static float MinHuntingForWarrior = 40f;
+
+    /// <summary>
+    ///     An apprentice older than <see cref="WarriorAgeMoons" /> learns this much more in training for every extra
+    ///     moon (0.1 = 10% more per moon, so 3 moons late = 30% more). It wants its warrior name, so every apprentice
+    ///     gets there in the end. Tested 0 to 0.15: it barely matters, because most late apprentices are only a few
+    ///     points short and make it the next moon anyway. It's a safety net for unlucky ones (no mentor, a famine).
+    /// </summary>
+    [TuningGroup("Aging")] public static float MotivationPerMoon = 0.1f;
+
     /// <summary>Warriors and deputies retire to the elders' den at this age. Leaders never retire.</summary>
     [TuningGroup("Aging")] public static int RetireAgeMoons = 120;
 
