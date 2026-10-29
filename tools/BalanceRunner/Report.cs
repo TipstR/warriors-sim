@@ -45,6 +45,16 @@ public static class Report {
             Console.WriteLine($"  the best 20% of hunters catch {shares.Average() * 100:0}% of the mice");
 
         Console.WriteLine();
+        Console.WriteLine("Training:");
+        var lessons = results.Sum(r => r.Lessons);
+        var apprenticeMoons = results.Sum(r => r.ApprenticeMoons);
+        if (apprenticeMoons > 0)
+            Console.WriteLine($"  {lessons / (float)apprenticeMoons:0.0} lessons per apprentice and moon, "
+                              + $"{results.Sum(r => r.LessonsByHelpers) * 100f / Math.Max(1, lessons):0}% given by a helper");
+        PrintSpread("  mentors' mentoring", results.SelectMany(r => r.MentorsMentoring).ToList());
+        PrintSpread("  warriors' mentoring", results.SelectMany(r => r.WarriorsMentoring).ToList());
+
+        Console.WriteLine();
         Console.WriteLine("Skill faded below the peak (living cats, checked yearly):");
         var groups = results.SelectMany(r => r.FadedBelowPeak).GroupBy(g => g.Key);
         foreach (var group in groups.OrderBy(g => g.Key)) {

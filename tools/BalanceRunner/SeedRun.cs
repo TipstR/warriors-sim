@@ -36,6 +36,19 @@ public class SeedResult {
     /// </summary>
     public readonly List<(float Lost, int Moons)> RustyTimes = new();
 
+    /// <summary>Training patrol lessons (one per apprentice and patrol), and how many of them a helper gave.</summary>
+    public int Lessons;
+    public int LessonsByHelpers;
+
+    /// <summary>Moons spent as an apprentice, summed over all apprentices (to get lessons per apprentice and moon).</summary>
+    public int ApprenticeMoons;
+
+    /// <summary>Once per year: the mentoring skill of every cat that has an apprentice right now.</summary>
+    public readonly List<float> MentorsMentoring = new();
+
+    /// <summary>Once per year: the mentoring skill of every warrior, deputy and leader.</summary>
+    public readonly List<float> WarriorsMentoring = new();
+
     public int Adults;
     public int Reached90;
     public int Reached95;
@@ -77,6 +90,7 @@ public static class SeedRun {
                 }
 
                 TrackRustyHunters(clan, rusty, result);
+                result.ApprenticeMoons += clan.Cats.Count(c => c.Rank == Rank.Apprentice);
             }
 
             if (tick % TicksPerYear == 0) {
@@ -106,6 +120,14 @@ public static class SeedRun {
                 result.Starved++;
             else if (line.Contains("died of") && !line.Contains("died of old age"))
                 result.SicknessDeaths++;
+            return;
+        }
+
+        // "Training patrol: Graypaw with Lionheart, Ravenpaw with Longtail (helping out)."
+        if (line.Contains("| Training patrol: ")) {
+            var pairs = line[(line.IndexOf("Training patrol: ") + "Training patrol: ".Length)..].Split(", ");
+            result.Lessons += pairs.Length;
+            result.LessonsByHelpers += pairs.Count(p => p.Contains("(helping out)"));
             return;
         }
 
@@ -140,6 +162,13 @@ public static class SeedRun {
             .ToList();
         if (hunters.Count >= 5)
             result.LivingHuntersByYear.Add(hunters);
+
+        foreach (var cat in clan.Cats.Where(c => c.Rank is Rank.Warrior or Rank.Deputy or Rank.Leader)) {
+            var mentoring = cat.Skills[SkillType.Mentoring].Level;
+            result.WarriorsMentoring.Add(mentoring);
+            if (clan.ApprenticeOf(cat) != null)
+                result.MentorsMentoring.Add(mentoring);
+        }
 
         foreach (var cat in clan.Cats.Where(c => c.Rank != Rank.Kit)) {
             var skill = cat.Skills[cat.IsMedicineCat ? SkillType.Healing : SkillType.Hunting];
