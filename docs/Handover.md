@@ -6,6 +6,18 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Skill overhaul done (step 4: minimum for the warrior ceremony).** At
+  12 moons an apprentice only becomes a warrior with at least
+  `MinHuntingForWarrior` (40) hunting (user chose 40 over 50: 50 lifted the
+  whole Clan to 60 average, which is "easier hunting for everyone"). A late
+  apprentice trains `MotivationPerMoon` (10%) harder per late moon. 17% are
+  late, almost always by 1–2 moons, latest at ~19 moons. The bonus barely
+  matters (0–15% gave the same results): late apprentices are only a few
+  points short and still learn 8–12 points a moon. The long cases come from
+  bad luck (no mentor, sickness, famine). Long Ravenpaw-like apprenticeships
+  would need a different lever (bad mentors, few lessons), not the bonus.
+  New warriors ~56 (weakest 10% 42). `docs/Milestone1.md` describes the new
+  skill rules.
 - **Training patrols + mentoring as a skill.** `SkillType.Mentoring` (every
   cat starts at `StartingMentoring` 20, the old mentoring gift is its gift)
   replaces `MentoringGift`, `MoonsMentored` and the "inexperienced mentor"
@@ -59,24 +71,12 @@ agents' own memory doesn't move between computers.
 - Earlier: sickness, injuries, medicine den, herbs, soft birth brake, gifts and
   mentors (see git log and `docs/Milestone1.md`).
 
-Last test (100 seeds × 30 years, Balanced leader, after training patrols):
-0 of 100 Clans died out, 7.5 starved per year, ~2 sickness deaths per run.
+Last test (100 seeds × 30 years, Balanced leader, after step 4): 0–1 of 100
+Clans died out, ~7.2 starved per year, ~2 sickness deaths per run.
 
-## Skill overhaul: next steps
-
-One step at a time, a 100-seed test after each, commit when the user agrees.
-
-4. **Minimum skill for the warrior ceremony** (40 or 50, tunable). Apprentices
-   **stay apprentices until good enough**, no exception. User: "the minimum
-   must be achievable by any cat". Counterweight: a **motivation bonus** for
-   apprentices past the warrior age (e.g. +15% learning per extra moon,
-   `MotivationPerMoon`, plus a log line like "Ravenpaw trains harder than
-   ever"). The user doesn't want to tune around a target length: test first
-   and see whether anyone gets close to a long apprenticeship. Measure the age
-   at the ceremony (average, max) and how many cats reach 90+/95+ per skill.
-
-After step 4: update the training rules in `docs/Milestone1.md` (they still
-describe integer skills and "parts of a point are kept").
+The skill overhaul (steps 1–4, training patrols, mentoring) is finished.
+Open for later: 1 in 17 cats reaching 90+ (was 1 in 29 before training
+patrols) may need tuning; the user wants to tune balance later.
 
 ## Other TODOs (priority order)
 
@@ -117,8 +117,8 @@ describe integer skills and "parts of a point are kept").
   100 30 [Name=value ...]` (~25 seconds). Prints Clans dying out, deaths by
   cause, hunting skill over a cat's life, how many reach 90+/95+, and checks
   the targets in `Report.cs`. Add statistics there when a step needs them
-  (e.g. greencough cases: `caught greencough`, `turned into greencough`; age
-  at the ceremony for step 4). 10 seeds are too noisy (±4 die-outs per 100 is
+  (e.g. greencough cases: `caught greencough`, `turned into greencough`).
+  10 seeds are too noisy (±4 die-outs per 100 is
   normal).
 - **Pure refactors:** save the full log (every level) of a few seeds before
   the change and compare it byte by byte afterwards. Same seed must give the
@@ -142,6 +142,6 @@ describe integer skills and "parts of a point are kept").
   RimWorld-like cap; "hunting for a cat is like riding a bike"). Mentoring
   is a skill learned by teaching and never fades. Apprentices learn on
   training patrols with their mentor or a helper, except in a famine.
-  Apprentices stay apprentices until they reach the minimum, which every cat
-  must be able to reach.
+  Apprentices stay apprentices until they reach the minimum (40), which every
+  cat must be able to reach.
 - Balance doesn't have to be perfect before committing; commit working steps.

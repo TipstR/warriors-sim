@@ -28,12 +28,10 @@ Each cat has:
 | Rank               | kit, apprentice, warrior, deputy, leader, elder      |
 | Sex                | she-cat or tom                                       |
 | Age                | in moons                                             |
-| Hunting            | skill, 0–100                                         |
+| Hunting            | skill, 0–100 (a decimal), with gift and best level   |
+| Mentoring          | skill, 0–100 (a decimal), with gift and best level   |
 | Diligence          | personality trait, 0–100 (lazy cats hunt worse)      |
-| Hunting gift       | born with it, 0–100, 50 = average                    |
-| Mentoring gift     | born with it, 0–100, 50 = average                    |
 | Mentor             | the cat that trains or trained it, or none           |
-| Moons mentored     | how long it has trained apprentices                  |
 | Satiation          | 0–100 (100 = full, 0 = starving)                     |
 | Energy             | 0–100 (100 = rested, 0 = exhausted)                  |
 | Starvation stacks  | how long the cat has gone without food while starving |
@@ -150,8 +148,11 @@ The default is **Balanced**.
 
 ### Hunting patrols
 
-- Checked at dawn, sunhigh and evening: if the pile has **fewer mice than
-  there are cats**, the leader sends hunting patrols. The leader keeps
+- Checked at dawn, sunhigh and evening. Outside a famine, the leader first
+  sends **training patrols**, even if the pile is full (see Training).
+- Then, if the pile has **fewer mice than
+  there are cats**, the leader sends hunting patrols. The training patrols'
+  catch counts too. The leader keeps
   sending patrols until they are expected to catch **20% more** than the
   difference, or until no hunters are left. The leader plans with normal
   chances and doesn't account for the season or the prey left.
@@ -222,8 +223,9 @@ attempt is harder, and there is less prey in total.
 ### Aging and ranks
 
 - Every cat gets a moon older at the end of each moon.
-- **Apprentice** at **6 moons**, **warrior** at **12 moons**. Apprentices
-  learn to hunt from their mentor (see Gifts and mentors).
+- **Apprentice** at **6 moons**, **warrior** at **12 moons**, but only with
+  at least **40 hunting**. Apprentices learn to hunt from their mentor (see
+  Skills, gifts and mentors).
 - Warriors and deputies **retire** to the elders' den at **120 moons**.
   Leaders never retire.
 - **Old age:** from **96 moons** on, a cat can die of old age. The chance
@@ -232,40 +234,67 @@ attempt is harder, and there is less prey in total.
   deputy is chosen right away: for now the best hunter among the warriors
   (the older one if two are equal).
 
-### Gifts and mentors
+### Skills, gifts and mentors
 
-Skill comes from two things: what a cat was born with (its **gift**) and
-who trained it (its **mentor**). Only hunting is a skill so far, but every
-new skill will get its own gift.
+Skill comes from what a cat was born with (its **gift**), who trained it
+(its **mentor**) and what it does. The skills are hunting, mentoring and
+healing (for medicine cats, see `Tuning.cs`). Every skill has its own gift.
 
-- **Gifts:** every kit is born with a hunting gift and a mentoring gift,
-  0–100 (50 = average). Half of a gift comes from the parents (the average
-  of both), the other half is luck. The luck is the average of three rolls,
-  so very gifted and very ungifted kits are rare. Gifted parents often have
-  gifted kits, but not always.
-- **Training:** every moon, an apprentice's hunting skill grows by
-  **8.7** × hunting gift factor × mentor factor. Parts of a point are kept,
-  so nothing is lost to rounding. With 8.7, the average new warrior has
-  about 50 hunting.
-  - Hunting gift factor: from **0.3** (gift 0) over **1** (gift 50) to
-    **1.7** (gift 100).
-  - Mentor factor: from **0.5** (worst mentor) to **1.5** (best mentor).
-    Without a mentor, an apprentice learns at **0.3** on its own.
-- **Mentoring quality** = mentoring gift × experience. A mentor who has
-  never mentored only teaches with **60%** of its gift. Every moon of
-  mentoring adds experience, and after **24 moons** (about four
-  apprentices) the mentor teaches with its full gift. A cat with a low gift
-  stays a bad mentor, however long it mentors.
+- **Gifts:** every kit is born with a gift for each skill, 0–100
+  (50 = average; a healing gift is rare). Half of a gift comes from the
+  parents (the average of both), the other half is luck. The luck is the
+  average of three rolls, so very gifted and very ungifted kits are rare.
+  Gifted parents often have gifted kits, but not always.
+- **Learning:** every time a cat learns, its skill grows by
+  amount × gift factor × difficulty. Skills are decimals, so even a small
+  lesson counts.
+  - Gift factor: from **0.3** (gift 0) over **1** (gift 50) to **1.7**
+    (gift 100).
+  - Difficulty: every level is harder than the one before:
+    (1 − level / 100)^**0.5**. At 50 a cat learns at 71% speed, at 90 at
+    32%, at 95 at 22%.
+- **Training:** an apprentice learns in two ways, about half each:
+  - **in camp**, every moon: **5.25** × mentor factor.
+  - **on training patrols** (about 37 lessons a moon): **0.158** × the
+    teacher's mentor factor per lesson.
+  - Mentor factor: from **0.5** (mentoring 0) over **1** (mentoring 50) to
+    **1.5** (mentoring 100). Without a mentor, an apprentice learns at
+    **0.3** in camp.
+- **Training patrols:** outside a famine, the leader sends every apprentice
+  who can hunt out with a teacher, two pairs per patrol, before any other
+  patrol. The teacher is the apprentice's mentor. If the mentor can't come
+  (asleep, sick, hunted last time, ...), another warrior **helps out**,
+  preferably one without an apprentice. In a famine there are no training
+  patrols, so apprentices learn more slowly in hard times.
+- **Mentoring** is a skill too. Every cat starts at **20**. A teacher gets
+  better with every lesson (**0.06**, a helper half of that). A medicine
+  cat learns it every moon it trains an apprentice. Mentoring never fades.
+- **Learning by doing:** every mouse a cat catches improves its hunting by
+  **0.002**. Good hunters catch more and keep getting better.
+- **Use it or lose it:** a skill not used in a moon loses **1 point**, but
+  never drops below **half** the best level the cat ever had. Going hunting
+  (even without a catch), caring for a cat, gathering herbs and any learning
+  count as practice, so apprentices never lose anything. Mentoring never
+  fades.
+- **Feeling rusty:** below its best level, a cat relearns **10 times**
+  faster, like riding a bike. A rusty hunter is usually back after a few
+  moons. In practice only elders fade much, because almost every other cat
+  hunts every moon.
+- **Warrior ceremony:** at **12 moons** an apprentice becomes a warrior if
+  its hunting is at least **40**. Otherwise it stays an apprentice and
+  trains **10% harder** for every moon it is late, so every apprentice gets
+  there in the end. About 1 in 6 is late, almost always by one or two moons.
 - **Choosing a mentor:** when a kit becomes an apprentice, the leader picks
   a mentor among the warriors, the deputy and the leader who don't have an
-  apprentice yet and aren't in the nursery. The leader can't see who has a
-  gift for mentoring. Good hunters and cats who have mentored before are
-  more likely to be chosen, but every free cat has a chance.
+  apprentice yet and aren't in the nursery. The leader can't see gifts, but
+  sees who hunts well and who taught well. Those are more likely to be
+  chosen, but every free cat has a chance.
 - **Losing a mentor:** if a mentor dies, retires or moves to the nursery,
   the apprentice gets a new mentor at the next moon. If no cat is free, it
   waits for its old mentor and learns on its own in the meantime.
-- **Result:** a gifted apprentice with a great mentor can become a warrior
-  with 90+ hunting, an ungifted one with a bad mentor stays below 20.
+- **Result:** new warriors average about 56 hunting (the Clan's survival is
+  very sensitive to this), the weakest 10% about 42, the best 10% 75+. About
+  1 in 17 cats reaches 90+ hunting in its life.
 
 ## Starting Clan
 
@@ -275,7 +304,7 @@ apprentices, 4 elders, and the 6 kits of Frostfur and Brindleface. The
 apprentices have their mentors from the book (Ravenpaw: Tigerclaw, Graypaw:
 Lionheart, Dustpaw: Redtail, Sandpaw: Whitestorm). Gifts fit the book:
 Tigerclaw is a great hunter but a bad mentor, Lionheart and Whitestorm are
-great mentors.
+great mentors (mentoring 80 and 75, Tigerclaw 25).
 
 ## Technical decisions
 
@@ -288,7 +317,7 @@ great mentors.
 ## Not in Milestone 1
 
 Thirst, social and other needs; health and injuries; sickness; medicine cats;
-skills other than hunting; personality beyond diligence; other Clans;
+skills other than hunting, mentoring and healing; personality beyond diligence; other Clans;
 predators; sim LODs; map and graphics; saving and loading.
 
 ## Open questions
