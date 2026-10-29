@@ -5,9 +5,10 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>WarriorsSim</RootNamespace>
   </PropertyGroup>
-  <!-- The unit tests are their own project (tests/WarriorsSim.Tests), not part of the game -->
+  <!-- The unit tests and tools (e.g. tools/BalanceRunner) are their own projects, not part of the game -->
   <ItemGroup>
     <Compile Remove="tests\**" />
+    <Compile Remove="tools\**" />
   </ItemGroup>
   <!-- Non-code files, so they show up in Rider's project view -->
   <ItemGroup>

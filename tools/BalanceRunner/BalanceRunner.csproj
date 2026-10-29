@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Same settings as the game project, so the simulation code compiles the same way -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>WarriorsSim.BalanceRunner</RootNamespace>
+  </PropertyGroup>
+
+  <!-- The simulation has no Godot code, so it is compiled directly (like in the tests) -->
+  <ItemGroup>
+    <Compile Include="..\..\scripts\Simulation\**\*.cs" LinkBase="Simulation" />
+  </ItemGroup>
+
+</Project>

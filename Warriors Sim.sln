@@ -6,6 +6,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B8AAFE05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarriorsSim.Tests", "tests\WarriorsSim.Tests\WarriorsSim.Tests.csproj", "{BF8378DF-C487-4710-9338-A04A0E4D4FC3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BalanceRunner", "tools\BalanceRunner\BalanceRunner.csproj", "{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,8 +29,15 @@ Global
 		{BF8378DF-C487-4710-9338-A04A0E4D4FC3}.ExportDebug|Any CPU.Build.0 = Debug|Any CPU
 		{BF8378DF-C487-4710-9338-A04A0E4D4FC3}.ExportRelease|Any CPU.ActiveCfg = Debug|Any CPU
 		{BF8378DF-C487-4710-9338-A04A0E4D4FC3}.ExportRelease|Any CPU.Build.0 = Debug|Any CPU
+		{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A}.ExportDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A}.ExportDebug|Any CPU.Build.0 = Debug|Any CPU
+		{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A}.ExportRelease|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A}.ExportRelease|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BF8378DF-C487-4710-9338-A04A0E4D4FC3} = {B8AAFE05-91A5-4180-AFCA-E49DE8DCF0B4}
+		{BDEEF57F-D788-4F1E-B23A-FD21B8828D9A} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

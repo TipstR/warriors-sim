@@ -64,6 +64,9 @@ When moving a script, move its `.uid` file with it.
   `scripts/Simulation/**/*.cs` directly, so the tests don't need Godot. Test
   files mirror the simulation folders (e.g. `Cats/FrailtyTests.cs`). The Godot
   project ignores `tests/` (`Compile Remove` in the `.csproj`, `.gdignore`).
+- `tools/BalanceRunner/` – console program for balance tests (many seeds,
+  many years). Compiles the simulation directly, like the tests; the Godot
+  project ignores `tools/` too.
 - `docs/` – vision, milestone rules, handover, the user's own notes.
 - `logs/` – simulation logs (ignored by git).
 
@@ -85,11 +88,13 @@ When moving a script, move its `.uid` file with it.
   another, and every test class calls `TuningSettings.ResetToDefaults()` in its
   constructor.
 - **Balance changes must be tested with many random seeds and long runs**
-  (100 seeds × 30 years, about 3 minutes; 10 seeds are too noisy), not with a
-  single run. A small console project outside the repo that compiles
-  `scripts/Simulation/**/*.cs` works well for this, because the simulation has no
-  Godot dependency. Run it in the background. Ask before many long runs when
-  the user is on battery.
+  (100 seeds × 30 years; 10 seeds are too noisy), not with a single run. Use
+  `dotnet run -c Release --project tools/BalanceRunner -- 100 30` (about
+  25 seconds, seeds run in parallel). Extra arguments change Tuning values for
+  that run, e.g. `HuntingPracticePerMouse=0.004` or `Policy=Compassionate`. It
+  prints the statistics and checks the targets in `Report.cs`. Add new
+  statistics there when a step needs them. Ask before many long runs when the
+  user is on battery.
 - Godot can be started headless (`--headless --path . -s test.gd`) to check
   scenes, or with a window to save a screenshot of the viewport.
 - Commit and push only when the user asks. Split commits by feature.
