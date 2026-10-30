@@ -98,6 +98,10 @@ When moving a script, move its `.uid` file with it.
   user is on battery.
 - Godot can be started headless (`--headless --path . -s test.gd`) to check
   scenes, or with a window to save a screenshot of the viewport.
+- **After changing an asset from outside (e.g. a PNG), tell the user to
+  reimport or reload the project in Godot.** If a headless Godot imported it
+  first, the open editor thinks it is up to date and keeps showing the old
+  version.
 - Commit and push only when the user asks. Split commits by feature.
 
 ## Lessons from balancing

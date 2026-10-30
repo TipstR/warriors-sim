@@ -13,7 +13,8 @@ using WarriorsSim.Simulation;
 ///         The scene needs these nodes with a unique name (%): <c>Cats</c> (a Node2D the cat views go into),
 ///         <c>Camera</c> (a Camera2D), and Marker2D spots: <c>CampExit</c>, <c>Clearing</c>, <c>FreshKillPile</c>,
 ///         and one per den: <c>WarriorsDen</c>, <c>ApprenticesDen</c>, <c>NurseryDen</c>, <c>EldersDen</c>,
-///         <c>LeaderDen</c>, <c>MedicineDen</c>. A Label <c>InfoLabel</c> is optional.
+///         <c>LeaderDen</c>, <c>MedicineDen</c>. A Label <c>InfoLabel</c> is optional, and so is a NavigationRegion2D
+///         <c>Navigation</c>: without it, the cats walk straight through walls.
 ///     </para>
 /// </summary>
 public partial class Camp : Node2D {
@@ -47,10 +48,10 @@ public partial class Camp : Node2D {
 	[Export] public float GroupSpread { get; set; } = 13f;
 
 	/// <summary>How far from the middle of the clearing the cats spread out, in pixels.</summary>
-	[Export] public float ClearingRadius { get; set; } = 115f;
+	[Export] public float ClearingRadius { get; set; } = 160f;
 
 	/// <summary>How far from the middle of a den the cats spread out, in pixels.</summary>
-	[Export] public float DenRadius { get; set; } = 30f;
+	[Export] public float DenRadius { get; set; } = 48f;
 
 	/// <summary>How close to a cat a click has to be to follow it, in pixels.</summary>
 	[Export] public float ClickRadius { get; set; } = 16f;
@@ -85,6 +86,9 @@ public partial class Camp : Node2D {
 		_camera = GetNode<Camera2D>("%Camera");
 		_infoLabel = GetNodeOrNull<Label>("%InfoLabel");
 
+		// Works out where cats can walk from the blocking tiles painted right now, so painting is all it needs
+		GetNodeOrNull<NavigationRegion2D>("%Navigation")?.BakeNavigationPolygon(false);
+
 		World = new World(StartingClans.CreateThunderClan(), Tuning.RandomSeed, OnLog);
 		World.PatrolSent += _patrolsThisTick.Add;
 		World.CatAte += _ateThisTick.Add;
@@ -104,7 +108,9 @@ public partial class Camp : Node2D {
 	public override void _Process(double delta) {
 		_secondsSinceTick += (float)delta;
 
-		if (_secondsSinceTick >= SecondsPerTick) {
+		// The walkable area is only ready after the first frame. Without it, the first patrols would walk through walls.
+		var waitsForNavigation = HasNode("%Navigation") && !CatView.IsNavigationReady(this);
+		if (_secondsSinceTick >= SecondsPerTick && !waitsForNavigation) {
 			_secondsSinceTick = 0f;
 			Tick();
 		}
