@@ -6,6 +6,54 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Living-world overhaul, step 1 of 4: prey as items** (2026-11-01, not
+  committed yet). The pile holds real `Prey` pieces (`Clan/Prey.cs`, all
+  mice for now) that remember the tick they were caught in
+  (`World.TickNumber`). Fresh for `PreyFreshDays` (1), then stale for
+  `PreyStaleDays` (1, gives `StalePreyFoodShare` = half the food), then
+  crowfood, thrown out at the start of a tick. In eating order every cat
+  takes the freshest piece, so the last ones get the stale prey (log: "Only
+  stale prey was left for ..."). The moon summary counts crowfood and stale
+  meals, the BalanceRunner prints them. Result (100 × 30): only 0.8% of the
+  prey rots and 0.7% of meals are stale, balance unchanged (1 of 100 died
+  out, 7.4 starved per year), because the leader only hunts what is needed
+  and the pile is eaten within a day. Rotting becomes the brake once cats
+  hunt on their own (step 3).
+- **Plan for the overhaul** (user, 2026-11-01). Goal: an immersive world
+  where cats act on their own. Steps:
+  1. Prey as items with freshness (done, see above).
+  2. **Energy instead of the forced rest.** The user hates the rule "a cat
+     that hunted last tick can't go next tick" (`_lastHunters`); it was only
+     a balancing crutch. Energy is a resource used up by hunting and
+     patrolling; idling costs little, sleep refills it; tired cats nap in
+     camp during the day. A cat may hunt all day if it has the energy. The
+     leader keeps sending the best hunters first. Training patrols: one a
+     day as a placeholder, lesson gain retuned so a moon teaches as much as
+     now.
+  3. **Fun need + hunting alone.** Only warriors, deputy and leader have it
+     for now. Idling drains it (diligent cats faster), sleep doesn't, every
+     kind of work fills it. The lower it is, the higher the chance a free
+     warrior hunts alone (a weighted roll, not a threshold). The catch goes
+     on the pile. Hunting alone is a bit more dangerous (injuries). An
+     empty camp is fine: there is no idle target, guards and border patrols
+     will fill the time later. Add an idle statistic to the BalanceRunner.
+  4. **Prey types**: sizes, seasons, quality from hunting skill. A rabbit
+     feeds more than one cat and can be shared (sharing is a big part of
+     the books). The best piece goes by eating order.
+  Later (not planned yet): apprentice training split into hunting basics,
+  hunting trips, battle basics and training fights (Claude suggested a
+  weighted roll by the mentor over a strict timetable: what the apprentice
+  lacks, what the mentor likes, energy); mentors taking their apprentices
+  along; **apprentice chores** (gathering moss, carrying out crowfood,
+  ticks for the elders) that fill their days and slow down training; gifts
+  changing how much fun a kind of work gives (a bad hunter likes border
+  patrols, a bad fighter prefers hunting; only once there is a second kind
+  of work, otherwise weak hunters practice less and fall behind); more
+  fun sources like RimWorld's joy kinds (queens playing with kits, elders
+  telling stories); guards and border patrols; relationships forming their
+  own patrols (friends, potential mates); a tom bringing his mate and kits
+  the biggest piece; a starving cat breaking the code and eating its catch.
+
 - **Cat constructor takes the skills as a dictionary** (user's idea,
   2026-11-01): `new Cat(name, rank, sex, ageMoons, diligence, skills, mother,
   father)` with `skills` a `Dictionary<SkillType, Skill>`. Skills that aren't
