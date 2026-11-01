@@ -52,20 +52,22 @@ public class ActivityTests {
 	}
 
 	[Fact]
-	public void Meals_PileHasWhatPatrolsCaughtMinusWhatWasEaten() {
+	public void Meals_WhatWasCaughtIsOnThePileOrEaten() {
 		var world = NewWorld();
-		var pileBefore = world.Clan.FreshKillPile.Mice;
-		var caught = 0;
-		var eaten = 0;
-		world.PatrolSent += p => caught += p.MiceCaught;
-		world.CatAte += _ => eaten++;
+		var pileBefore = world.Clan.FreshKillPile.Portions;
+		var caught = 0f;
+		var meals = 0;
+		world.PatrolSent += p => caught += p.PortionsCaught;
+		world.CatAte += _ => meals++;
 
-		// The cats start full, so it takes a while until they eat
+		// The cats start full, so it takes a while until they eat. Nothing rots in 8 ticks.
 		for (var i = 0; i < 8; i++)
 			world.Tick();
 
-		Assert.True(eaten > 0);
-		Assert.Equal(pileBefore + caught - eaten, world.Clan.FreshKillPile.Mice);
+		// Every meal is one portion, or half of one when it was a shrew
+		var eaten = pileBefore + caught - world.Clan.FreshKillPile.Portions;
+		Assert.True(meals > 0);
+		Assert.InRange(eaten, meals * 0.5f - 0.01f, meals + 0.01f);
 	}
 
 	[Fact]

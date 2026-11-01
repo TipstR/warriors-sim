@@ -17,8 +17,9 @@ public partial class World {
 
 	/// <summary>What the work of this tick costs each cat. Cats that aren't in here pay the idle cost.</summary>
 	private readonly Dictionary<Cat, float> _energyCostThisTick = new();
-	private int _mealsMissedThisMoon;
-	private int _miceCaughtToday;
+	/// <summary>Meals cats went without this moon. A meal of less than a portion (a shrew, stale prey) counts in part.</summary>
+	private float _mealsMissedThisMoon;
+	private float _portionsCaughtToday;
 	private int _birthsThisMoon;
 	private int _ticksWithoutFamineHunger;
 
@@ -29,11 +30,11 @@ public partial class World {
 	private const float RustyPoints = 2f;
 
 	// Statistics for the moon summary
-	private int _miceCaughtThisMoon;
-	private int _crowfoodThisMoon;
+	private float _portionsCaughtThisMoon;
+	private float _crowfoodThisMoon;
 	private int _staleMealsThisMoon;
 	private int _huntsAloneThisMoon;
-	private int _miceCaughtAloneThisMoon;
+	private float _portionsCaughtAloneThisMoon;
 	private int _timesStarvedThisMoon;
 	private int _timesExhaustedThisMoon;
 	private int _deathsThisMoon;
@@ -265,7 +266,7 @@ public partial class World {
 	private void ConceiveKits() {
 		// Share of meals the Clan missed this moon (a cat can eat up to 3 times a day)
 		var possibleMeals = Math.Max(1, Clan.Cats.Count * Tuning.DaysPerMoon * 3);
-		var missedShare = (float)_mealsMissedThisMoon / possibleMeals;
+		var missedShare = _mealsMissedThisMoon / possibleMeals;
 		var foodFactor = 1f / (1f + missedShare * Tuning.HungerConceptionPenalty);
 		var chance = Tuning.ConceptionChancePerMoon * Tuning.SeasonConceptionMultiplier(Season)
 					 * foodFactor * CrowdingFactor();
@@ -291,9 +292,9 @@ public partial class World {
 	///     A brake that stops all births lets the Clan grow old together and collapse.
 	/// </summary>
 	private float CrowdingFactor() {
-		var micePerAdultPerDay = Tuning.SatiationLossPerTick * Tuning.TicksPerDay / Tuning.MouseSatiation;
+		var portionsPerAdultPerDay = Tuning.SatiationLossPerTick * Tuning.TicksPerDay / Tuning.PortionSatiation;
 		var prey = Tuning.TerritoryPreyPerDay * Tuning.SeasonCatchMultiplier(Tuning.CrowdingSeason);
-		var catsTheTerritoryFeeds = prey / micePerAdultPerDay;
+		var catsTheTerritoryFeeds = prey / portionsPerAdultPerDay;
 
 		var fullness = Clan.Cats.Count / catsTheTerritoryFeeds;
 		return Math.Max(Tuning.MinCrowdingFactor, 1f - fullness * fullness);
@@ -636,9 +637,9 @@ public partial class World {
 	/// <summary>
 	///     Outside a famine, the leader sends the apprentices out on training patrols at dawn, even if the pile is full
 	///     (see <see cref="SendTrainingPatrols" />). Once a day is a placeholder until training is split into its own
-	///     activities and apprentices have chores. Then, if the pile has fewer mice than there are cats, the leader
+	///     activities and apprentices have chores. Then, if the pile has fewer portions than there are cats, the leader
 	///     sends patrols until they are expected to catch enough to make up the difference, the training patrols'
-	///     catch included. The leader plans with normal hunting chances and doesn't account for the
+	///     catch included. The leader plans as if every catch were a mouse and doesn't account for the
 	///     season, so patrols bring back more than expected in greenleaf and less in leaf-bare.
 	/// </summary>
 	private void SendHuntingPatrolsIfNeeded() {
@@ -648,11 +649,11 @@ public partial class World {
 			: SendTrainingPatrols(available);
 		var expectedCatch = hunters.Sum(c => c.CatchChance * Tuning.AttemptsPerCat);
 
-		var miceNeeded = Clan.Cats.Count - Clan.FreshKillPile.Mice;
-		if (miceNeeded > 0 && hunters.Count == 0 && available.Count == 0)
+		var portionsNeeded = Clan.Cats.Count - Clan.FreshKillPile.Portions;
+		if (portionsNeeded > 0 && hunters.Count == 0 && available.Count == 0)
 			Log("The pile is low, but no cat can hunt.");
 
-		while (expectedCatch < miceNeeded * Tuning.PatrolPlanningMargin && available.Count > 0) {
+		while (expectedCatch < portionsNeeded * Tuning.PatrolPlanningMargin && available.Count > 0) {
 			var patrol = available.Take(Tuning.PatrolSize).ToList();
 			available.RemoveRange(0, patrol.Count);
 
@@ -763,13 +764,14 @@ public partial class World {
 			cat.Activity = Activity.Hunting;
 			AddEnergyCost(cat, Tuning.PatrolEnergyCost - Tuning.IdleEnergyCost);
 			var caught = Hunt(cat);
-			for (var i = 0; i < caught; i++)
-				Clan.FreshKillPile.Add(new Prey(TickNumber));
-			_miceCaughtThisMoon += caught;
+			Clan.FreshKillPile.Add(caught);
+			var portions = caught.Sum(p => p.Stats.Portions);
+			_portionsCaughtThisMoon += portions;
 			_huntsAloneThisMoon++;
-			_miceCaughtAloneThisMoon += caught;
+			_portionsCaughtAloneThisMoon += portions;
 
-			Log($"{cat.Name} went hunting alone and caught {caught} mice. Pile: {Clan.FreshKillPile.Mice}");
+			Log($"{cat.Name} went hunting alone and caught {Prey.Describe(caught)} "
+				+ $"({Prey.FormatPortions(portions)} portions). Pile: {PileText()}");
 			RollHuntingInjury(cat, Tuning.HuntAloneInjuryMultiplier);
 			PatrolSent?.Invoke(new Patrol(new[] { cat }, false, caught));
 		}
@@ -777,43 +779,49 @@ public partial class World {
 
 	private void SendHuntingPatrol(List<Cat> patrol, bool isTraining = false) {
 		var catches = new List<string>();
-		var total = 0;
+		var all = new List<Prey>();
 		foreach (var cat in patrol) {
 			cat.Activity = isTraining ? Activity.Training : Activity.Hunting;
 			AddEnergyCost(cat, Tuning.PatrolEnergyCost - Tuning.IdleEnergyCost);
 			var caught = Hunt(cat);
-			total += caught;
-			catches.Add($"{cat.Name} {caught}");
+			all.AddRange(caught);
+			catches.Add($"{cat.Name} {Prey.FormatPortions(caught.Sum(p => p.Stats.Portions))}");
 			RollHuntingInjury(cat);
 		}
 
-		for (var i = 0; i < total; i++)
-			Clan.FreshKillPile.Add(new Prey(TickNumber));
-		_miceCaughtThisMoon += total;
-		Log($"Hunting patrol caught {total} mice ({string.Join(", ", catches)}). Pile: {Clan.FreshKillPile.Mice}");
-		PatrolSent?.Invoke(new Patrol(patrol, isTraining, total));
+		Clan.FreshKillPile.Add(all);
+		_portionsCaughtThisMoon += all.Sum(p => p.Stats.Portions);
+		// The numbers after the names are portions
+		Log($"Hunting patrol caught {Prey.Describe(all)} ({string.Join(", ", catches)}). Pile: {PileText()}");
+		PatrolSent?.Invoke(new Patrol(patrol, isTraining, all));
 	}
 
 	/// <summary>
-	///     Rolls every hunting attempt of one cat and returns how many mice it caught.
-	///     Every mouse it catches teaches it a little (<see cref="Tuning.HuntingPracticePerMouse" />).
+	///     Rolls every hunting attempt of one cat and returns what it caught. The season decides what the cat finds
+	///     (see <see cref="RollPreyKind" />), its skill whether it catches it: the catch chance is raised to the
+	///     prey's hardness, so a weak hunter mostly brings mice and shrews and a strong one rabbits too.
+	///     Every piece it catches teaches it a little (<see cref="Tuning.HuntingPracticePerMouse" />).
 	///     Going hunting is practice even without a catch, so the skill doesn't fade.
 	/// </summary>
-	private int Hunt(Cat cat) {
+	private List<Prey> Hunt(Cat cat) {
 		cat.Skills[SkillType.Hunting].Practice();
-		var caught = 0;
+		var caught = new List<Prey>();
 		for (var i = 0; i < Tuning.AttemptsPerCat; i++) {
-			// The territory only has so much prey per day, and less in bad seasons.
+			var kind = RollPreyKind();
+			var stats = Tuning.PreyKinds[kind];
+
+			// The territory only has so much prey per day (in portions), and less in bad seasons.
 			// The more was already caught today, the harder it gets to find more, until there is none left.
 			var seasonMultiplier = Tuning.SeasonCatchMultiplier(Season);
 			var preyToday = Tuning.TerritoryPreyPerDay * seasonMultiplier;
-			var used = Math.Min(1f, _miceCaughtToday / preyToday);
+			var used = Math.Min(1f, _portionsCaughtToday / preyToday);
 			var preyLeft = 1f - MathF.Pow(used, Tuning.PreyDepletionSharpness);
-			var chance = Math.Clamp(cat.CatchChance * seasonMultiplier * preyLeft, 0f, 1f);
+			var skillChance = MathF.Pow(cat.CatchChance, stats.Hardness);
+			var chance = Math.Clamp(skillChance * seasonMultiplier * preyLeft, 0f, 1f);
 
 			if (_random.NextDouble() < chance) {
-				caught++;
-				_miceCaughtToday++;
+				caught.Add(new Prey(kind, TickNumber));
+				_portionsCaughtToday += stats.Portions;
 				cat.Skills[SkillType.Hunting].Improve(Tuning.HuntingPracticePerMouse);
 			}
 		}
@@ -821,14 +829,35 @@ public partial class World {
 		return caught;
 	}
 
+	/// <summary>What a hunting cat finds, by the season's weights in <see cref="Tuning.PreyKinds" />.</summary>
+	private PreyKind RollPreyKind() {
+		var season = (int)Season;
+		var roll = _random.NextDouble() * Tuning.PreyKinds.Values.Sum(k => k.SeasonWeights[season]);
+		foreach (var (kind, stats) in Tuning.PreyKinds) {
+			roll -= stats.SeasonWeights[season];
+			if (roll < 0)
+				return kind;
+		}
+
+		return PreyKind.Mouse;
+	}
+
 	/// <summary>Prey that has rotted into crowfood is thrown out of the pile.</summary>
 	private void ThrowOutCrowfood() {
-		var thrownOut = Clan.FreshKillPile.ThrowOutCrowfood(TickNumber);
-		if (thrownOut == 0)
+		var rotten = Clan.FreshKillPile.ThrowOutCrowfood(TickNumber);
+		if (rotten.Count == 0)
 			return;
 
-		_crowfoodThisMoon += thrownOut;
-		Log($"{thrownOut} pieces of prey had turned into crowfood and were thrown out. Pile: {Clan.FreshKillPile.Mice}");
+		var portions = rotten.Sum(p => p.PortionsLeft);
+		_crowfoodThisMoon += portions;
+		Log($"{Prey.Describe(rotten)} ({Prey.FormatPortions(portions)} portions) had turned into crowfood "
+			+ $"and were thrown out. Pile: {PileText()}");
+	}
+
+	/// <summary>"12 pieces (17.5 portions)"</summary>
+	private string PileText() {
+		var pile = Clan.FreshKillPile;
+		return $"{pile.Pieces} pieces ({Prey.FormatPortions(pile.Portions)} portions)";
 	}
 
 	private void FeedHungryCats() {
@@ -838,24 +867,36 @@ public partial class World {
 		var wasStarving = Clan.Cats.Where(c => c.IsStarving).ToHashSet();
 
 		var ateStale = new List<Cat>();
-		// Whoever comes first in the eating order takes the freshest piece
+		var eatersOfBigPrey = new Dictionary<Prey, List<Cat>>();
+		// Whoever comes first in the eating order takes the best piece, and started big prey is finished first
 		foreach (var cat in Clan.CatsInEatingOrder().Where(c => c.IsHungry && c.CanEatPrey)) {
-			var prey = Clan.FreshKillPile.TakeBest();
-			if (prey == null) {
+			var freshness = Clan.FreshKillPile.ChooseNext(TickNumber)?.FreshnessAt(TickNumber);
+			var piece = Clan.FreshKillPile.EatPortion(TickNumber, out var food);
+			if (piece == null) {
 				wentHungry.Add(cat);
 				continue;
 			}
 
-			if (prey.FreshnessAt(TickNumber) == Freshness.Stale)
+			if (freshness == Freshness.Stale)
 				ateStale.Add(cat);
-			cat.Eat(prey.FoodAt(TickNumber));
+			if (piece.Stats.Portions > 1f) {
+				if (!eatersOfBigPrey.TryGetValue(piece, out var eaters))
+					eatersOfBigPrey[piece] = eaters = new List<Cat>();
+				eaters.Add(cat);
+			}
+
+			cat.Eat(food);
+			// Half a meal (a shrew, stale prey) is half a missed meal, or a hungry Clan looks well fed
+			_mealsMissedThisMoon += 1f - Math.Min(1f, food / Tuning.PortionSatiation);
 			_ateThisTick.Add(cat);
 			ate.Add(cat);
 			CatAte?.Invoke(cat);
 		}
 
 		if (ate.Count > 0)
-			Log($"{ate.Count} cats ate ({Names(ate)}). Pile: {Clan.FreshKillPile.Mice}");
+			Log($"{ate.Count} cats ate ({Names(ate)}). Pile: {PileText()}");
+		foreach (var (piece, eaters) in eatersOfBigPrey.Where(e => e.Value.Count >= 2))
+			Log($"{Names(eaters)} shared a {piece.Name}.");
 		if (ateStale.Count > 0)
 			Log($"Only stale prey was left for {Names(ateStale)}.");
 		_staleMealsThisMoon += ateStale.Count;
@@ -894,7 +935,7 @@ public partial class World {
 		var sick = Clan.Cats.Count(c => c.IsSick);
 		var confined = Clan.Cats.Count(c => c.IsConfined);
 
-		Log($"End of day. Pile: {Clan.FreshKillPile.Mice}, average satiation: {averageSatiation:0}, "
+		Log($"End of day. Pile: {PileText()}, average satiation: {averageSatiation:0}, "
 			+ $"hungry: {hungry}, starving: {starving}, average energy: {averageEnergy:0}, "
 			+ $"starvation stacks: most {mostStacks}, mean {meanStacks:0.00}, sick: {sick} ({confined} confined)");
 	}
@@ -912,19 +953,19 @@ public partial class World {
 			+ $"born: {_birthsThisMoon}, died: {_deathsThisMoon}, "
 			+ $"kits: {Clan.Cats.Count(c => c.Rank == Rank.Kit)}, queens: {Clan.Cats.Count(c => c.IsQueen)}, "
 			+ $"starving cats passed over: {_starvingPassedOverThisMoon}, "
-			+ $"mice caught: {_miceCaughtThisMoon}, crowfood thrown out: {_crowfoodThisMoon}, "
+			+ $"portions caught: {_portionsCaughtThisMoon:0}, crowfood thrown out: {_crowfoodThisMoon:0} portions, "
 			+ $"stale meals: {_staleMealsThisMoon}, "
-			+ $"hunts alone: {_huntsAloneThisMoon} ({_miceCaughtAloneThisMoon} mice), "
-			+ $"meals missed: {_mealsMissedThisMoon}, times a cat starved: {_timesStarvedThisMoon}, "
+			+ $"hunts alone: {_huntsAloneThisMoon} ({_portionsCaughtAloneThisMoon:0} portions), "
+			+ $"meals missed: {_mealsMissedThisMoon:0}, times a cat starved: {_timesStarvedThisMoon}, "
 			+ $"times a cat was exhausted: {_timesExhaustedThisMoon}, "
-			+ $"pile: {Clan.FreshKillPile.Mice}, average satiation: {averageSatiation:0}, "
+			+ $"pile: {PileText()}, average satiation: {averageSatiation:0}, "
 			+ $"starving now: {starving}, {HealthSummary()}", LogLevel.Summary);
 
-		_miceCaughtThisMoon = 0;
+		_portionsCaughtThisMoon = 0;
 		_crowfoodThisMoon = 0;
 		_staleMealsThisMoon = 0;
 		_huntsAloneThisMoon = 0;
-		_miceCaughtAloneThisMoon = 0;
+		_portionsCaughtAloneThisMoon = 0;
 		_mealsMissedThisMoon = 0;
 		_timesStarvedThisMoon = 0;
 		_timesExhaustedThisMoon = 0;
@@ -942,7 +983,7 @@ public partial class World {
 		if (TimeOfDay == TimeOfDay.Night) {
 			Day++;
 			TimeOfDay = TimeOfDay.Dawn;
-			_miceCaughtToday = 0;
+			_portionsCaughtToday = 0;
 		}
 		else {
 			TimeOfDay++;

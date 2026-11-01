@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using WarriorsSim.Simulation;
@@ -62,14 +63,21 @@ public class SeedResult {
 	public int Reached90;
 	public int Reached95;
 
-	/// <summary>Fresh-kill: pieces caught, rotted into crowfood, and meals (all, and of stale prey).</summary>
-	public int MiceCaught;
-	public int Crowfood;
+	/// <summary>Fresh-kill: portions caught and rotted into crowfood, meals (all, and of stale prey).</summary>
+	public long PortionsCaught;
+	public long Crowfood;
 	public int Meals;
 	public int StaleMeals;
 
 	public int HuntsAlone;
-	public int MiceCaughtAlone;
+	public long PortionsCaughtAlone;
+
+	/// <summary>How many pieces of each kind of prey were caught.</summary>
+	public readonly Dictionary<PreyKind, int> CaughtByKind = new();
+
+	/// <summary>Cats hunting alone, by hunting skill (under 45, 45–70, 70+): trips and the portions they brought.</summary>
+	public readonly int[] TripsBySkill = new int[3];
+	public readonly float[] PortionsBySkill = new float[3];
 
 	/// <summary>
 	///     By season, daytime ticks only: summed over the ticks, how many cats with a fun need (warriors, deputy,
@@ -83,19 +91,19 @@ public class SeedResult {
 
 /// <summary>Runs ThunderClan with one seed and collects statistics from the log and from the cats.</summary>
 public static class SeedRun {
-	private static readonly Regex PatrolLine = new(@"Hunting patrol caught \d+ mice \((.*)\)\. Pile");
+	private static readonly Regex PatrolLine = new(@"Hunting patrol caught [^(]* \((.*?)\)\. Pile");
 	private static readonly Regex CeremonyLine = new(@"has become a warrior: .*\(hunting (\d+)");
 
-	private static readonly Regex MoonPreyLine =
-		new(@"mice caught: (\d+), crowfood thrown out: (\d+), stale meals: (\d+), hunts alone: (\d+) \((\d+) mice\)");
+	private static readonly Regex MoonPreyLine = new(@"portions caught: (\d+), crowfood thrown out: (\d+) portions, "
+													  + @"stale meals: (\d+), hunts alone: (\d+) \((\d+) portions\)");
 
-	private static readonly Regex HuntAloneLine = new(@"\| (.+) went hunting alone and caught (\d+) mice");
+	private static readonly Regex HuntAloneLine = new(@"\| (.+) went hunting alone and caught [^(]* \(([\d.]+) portions\)");
 	private static int TicksPerMoon => Tuning.TicksPerDay * Tuning.DaysPerMoon;
 	private static int TicksPerYear => TicksPerMoon * 12;
 
 	public static SeedResult Run(int seed, int years) {
 		var result = new SeedResult();
-		var catchesThisYear = new Dictionary<string, int>();
+		var catchesThisYear = new Dictionary<string, float>();
 		var clan = StartingClans.CreateThunderClan();
 		// The starting cats got their skills by hand, so they don't say anything about learning
 		var startingCats = clan.Cats.ToHashSet();
@@ -106,6 +114,7 @@ public static class SeedRun {
 
 		var world = new World(clan, seed, (_, line) => ReadLogLine(line, result, catchesThisYear));
 		world.CatAte += _ => result.Meals++;
+		world.PatrolSent += patrol => CountCatch(patrol, result);
 
 		for (var tick = 1; tick <= TicksPerYear * years; tick++) {
 			// The season and time of the tick that is about to run
@@ -165,7 +174,20 @@ public static class SeedRun {
 		}
 	}
 
-	private static void ReadLogLine(string line, SeedResult result, Dictionary<string, int> catchesThisYear) {
+	private static void CountCatch(Patrol patrol, SeedResult result) {
+		foreach (var prey in patrol.Caught)
+			result.CaughtByKind[prey.Kind] = result.CaughtByKind.GetValueOrDefault(prey.Kind) + 1;
+
+		// A patrol of one is a cat hunting alone (or a leftover cat the leader sent; rare)
+		if (patrol.Cats.Count != 1 || patrol.IsTraining)
+			return;
+		var hunting = patrol.Cats[0].Skills[SkillType.Hunting].Level;
+		var band = hunting < 45 ? 0 : hunting < 70 ? 1 : 2;
+		result.TripsBySkill[band]++;
+		result.PortionsBySkill[band] += patrol.PortionsCaught;
+	}
+
+	private static void ReadLogLine(string line, SeedResult result, Dictionary<string, float> catchesThisYear) {
 		if (line.Contains("cats are left.")) {
 			if (line.Contains("starved to death"))
 				result.Starved++;
@@ -184,11 +206,11 @@ public static class SeedRun {
 
 		var moonPrey = MoonPreyLine.Match(line);
 		if (moonPrey.Success) {
-			result.MiceCaught += int.Parse(moonPrey.Groups[1].Value);
+			result.PortionsCaught += int.Parse(moonPrey.Groups[1].Value);
 			result.Crowfood += int.Parse(moonPrey.Groups[2].Value);
 			result.StaleMeals += int.Parse(moonPrey.Groups[3].Value);
 			result.HuntsAlone += int.Parse(moonPrey.Groups[4].Value);
-			result.MiceCaughtAlone += int.Parse(moonPrey.Groups[5].Value);
+			result.PortionsCaughtAlone += int.Parse(moonPrey.Groups[5].Value);
 			return;
 		}
 
@@ -196,7 +218,8 @@ public static class SeedRun {
 		var alone = HuntAloneLine.Match(line);
 		if (alone.Success) {
 			var name = alone.Groups[1].Value;
-			catchesThisYear[name] = catchesThisYear.GetValueOrDefault(name) + int.Parse(alone.Groups[2].Value);
+			catchesThisYear[name] = catchesThisYear.GetValueOrDefault(name)
+									+ float.Parse(alone.Groups[2].Value, CultureInfo.InvariantCulture);
 			return;
 		}
 
@@ -206,22 +229,24 @@ public static class SeedRun {
 			return;
 		}
 
-		// "(Graypaw 2, Sandstorm 3)". Names change at ceremonies, so a cat may count as two hunters that year.
+		// "(Graypaw 2, Sandstorm 4.5)", in portions. Names change at ceremonies, so a cat may count as two hunters
+		// that year.
 		var patrol = PatrolLine.Match(line);
 		if (!patrol.Success)
 			return;
 		foreach (var part in patrol.Groups[1].Value.Split(", ")) {
 			var space = part.LastIndexOf(' ');
 			var name = part[..space];
-			catchesThisYear[name] = catchesThisYear.GetValueOrDefault(name) + int.Parse(part[(space + 1)..]);
+			catchesThisYear[name] = catchesThisYear.GetValueOrDefault(name)
+									+ float.Parse(part[(space + 1)..], CultureInfo.InvariantCulture);
 		}
 	}
 
-	private static void EndYear(Clan clan, SeedResult result, Dictionary<string, int> catchesThisYear) {
+	private static void EndYear(Clan clan, SeedResult result, Dictionary<string, float> catchesThisYear) {
 		if (catchesThisYear.Count >= 5) {
 			var catches = catchesThisYear.Values.OrderByDescending(n => n).ToList();
 			var best = Math.Max(1, catches.Count / 5);
-			result.Top20CatchShare.Add((float)catches.Take(best).Sum() / catches.Sum());
+			result.Top20CatchShare.Add(catches.Take(best).Sum() / catches.Sum());
 		}
 
 		var hunters = clan.Cats

@@ -64,7 +64,19 @@ Medicine cats come later.
 - A full cat (100) is empty after **6 ticks** (36 hours), so satiation drops
   by **100 / 6 ≈ 16.7 per tick** for an adult.
 - At 0 the cat is **starving** (see Starvation).
-- For now there is only one kind of prey: **mice, 25 satiation each**.
+- Prey is measured in **portions**: one portion (a mouse) gives **25
+  satiation**.
+
+| Prey     | Portions | Hardness | Newleaf | Greenleaf | Leaf-fall | Leaf-bare |
+|----------|----------|----------|---------|-----------|-----------|-----------|
+| Shrew    | 0.5      | 0.7      | 2       | 2         | 2         | 2         |
+| Mouse    | 1        | 1        | 4       | 4         | 4         | 4         |
+| Vole     | 1        | 1        | 3       | 3         | 3         | 2         |
+| Bird     | 1.5      | 1.8      | 2       | 3         | 2         | 0.5       |
+| Squirrel | 2        | 2.1      | 1.5     | 2         | 2.5       | 0.5       |
+| Rabbit   | 3        | 2.6      | 1.5     | 1.5       | 1.5       | 1.5       |
+
+  The season columns say how often a cat finds each kind (weights).
 - How much a cat needs depends on its age, compared to an adult (= 1). Ages
   in between are interpolated. Based on real kittens:
 
@@ -79,11 +91,16 @@ Medicine cats come later.
 - Cats eat at dawn, sunhigh and evening, never at night.
 - A cat eats when its satiation is **below 75** and there is prey on the
   pile, so it keeps a reserve for a missed meal and the night.
-- A cat eats **one mouse per tick** at most.
+- A cat eats **one portion per tick** at most (a shrew is only half).
 - The pile holds real pieces of prey: **fresh** for 1 day after the catch,
   then **stale** for 1 day (half the food), then **crowfood** that gets
-  thrown out. Every cat takes the freshest piece, so the last ones in the
-  eating order get the stale prey.
+  thrown out.
+- A fresh piece that was started (a rabbit, a squirrel, a bird) is finished
+  first, so big prey is **shared** by the next cats in the eating order.
+  Otherwise every cat takes the freshest piece, and of those the biggest, so
+  the last ones get stale prey or shrews.
+- A meal of less than one portion (a shrew, stale prey) counts as **partly
+  missed** for the birth rule (see Mates and kits).
 - Kits younger than **1 moon** can't eat prey, only milk (see Nursery).
 - If there isn't enough prey for everyone, the leader's **feeding policy**
   decides who eats first. Every cat gets a score, and the highest score eats
@@ -138,7 +155,8 @@ The default is **Balanced**.
 ### Starvation
 
 - Every tick a starving cat doesn't eat, it gets a **starvation stack**.
-  Every meal removes one.
+  Every real meal (at least **16.7** satiation, what a cat uses in a tick:
+  a mouse, milk) removes one. A shrew or stale prey only stops new stacks.
 - Every stack lowers the cat's max energy by **4**.
 - Up to **8 stacks**, starving can't kill a cat. Every stack above that adds
   **1% chance per tick** to die (e.g. 14 stacks = 6%). At **20 stacks**
@@ -173,12 +191,12 @@ The default is **Balanced**.
 
 - Checked at dawn, sunhigh and evening. Outside a famine, the leader first
   sends **training patrols**, even if the pile is full (see Training).
-- Then, if the pile has **fewer mice than
+- Then, if the pile has **fewer portions than
   there are cats**, the leader sends hunting patrols. The training patrols'
   catch counts too. The leader keeps
   sending patrols until they are expected to catch **20% more** than the
-  difference, or until no hunters are left. The leader plans with normal
-  chances and doesn't account for the season or the prey left.
+  difference, or until no hunters are left. The leader plans as if every
+  catch were a mouse and doesn't account for the season or the prey left.
 - **Who can hunt:** apprentices, warriors, the deputy and the leader. Queens
   in the nursery (nursing, or less than **21 days** before the birth), kits
   and elders don't hunt, except in a famine (see above).
@@ -188,17 +206,22 @@ The default is **Balanced**.
   helpers. Within each group, the best catch chance first, so tired cats are
   picked later.
 - **Patrol size:** 4 cats.
-- **Result:** each cat gets **6 attempts** per patrol. Each success = 1 mouse
-  on the pile. No carrying limit, so good hunters make a real difference.
+- **Result:** each cat gets **6 attempts** per patrol. For each attempt the
+  season decides what it finds (see the prey table under Satiation). Each
+  success = one piece on the pile. No carrying limit, so good hunters make a
+  real difference.
 - **Catch chance** per attempt:
-  - 10% + hunting × 0.6% + (diligence − 50) × 0.2%
-  - × energy factor (S-curve, see Energy)
+  - the cat's chance: 10% + hunting × 0.6% + (diligence − 50) × 0.2%,
+    × energy factor (S-curve, see Energy), × frailty (below)
+  - raised to the prey's **hardness**: a cat with 46% catches a mouse at
+    46%, a rabbit (2.6) at 13%; a cat with 64% catches a rabbit at 31%. So
+    weak hunters bring mice and shrews, strong ones big prey too.
   - × frailty: old cats aren't as fit anymore, whatever their rank. A fully
     frail cat catches at **30%**, a cat of 120 moons at about 80%, one of
     150 moons at about 55%. They still mentor as well as before.
   - × season (see Seasons)
   - × prey left in the territory today
-- **Prey limit:** the territory has about **100 mice per day** (× season).
+- **Prey limit:** the territory has about **100 portions per day** (× season).
   The more was caught today, the harder the next catch: almost normal until
   half is caught (94%), then it drops quickly (75% caught: 68%, 90% caught:
   34%, all caught: 0%). This limits how many cats the territory can feed.

@@ -277,7 +277,8 @@ public partial class Camp : Node2D {
 
 		var (day, time, season) = _shownTime;
 		var text = $"{World.Clan.Name}, day {day}, {time}, {season}. "
-				   + $"{World.Clan.Cats.Count} cats, pile: {World.Clan.FreshKillPile.Mice} mice";
+				   + $"{World.Clan.Cats.Count} cats, pile: {World.Clan.FreshKillPile.Pieces} pieces "
+				   + $"({World.Clan.FreshKillPile.Portions:0.#} portions)";
 		var cat = FollowedCat;
 		if (cat != null) {
 			var state = new List<string> { cat.Activity.ToString() };

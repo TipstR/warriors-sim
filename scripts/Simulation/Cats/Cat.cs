@@ -343,10 +343,15 @@ public class Cat {
 		Satiation = Math.Max(0f, Satiation - amount);
 	}
 
-	/// <summary>Eating also removes one starvation stack.</summary>
+	/// <summary>
+	///     A real meal (at least what a cat uses up in a tick, like a mouse or milk) also removes one starvation stack.
+	///     A shrew or stale prey only keeps a starving cat from getting worse: otherwise the same food would save
+	///     twice as many cats.
+	/// </summary>
 	public void Eat(float satiation) {
 		Satiation = Math.Min(Tuning.SatiationMax, Satiation + satiation);
-		StarvationStacks = Math.Max(0, StarvationStacks - 1);
+		if (satiation >= Tuning.SatiationLossPerTick - 0.01f)
+			StarvationStacks = Math.Max(0, StarvationStacks - 1);
 	}
 
 	/// <summary>Also lowers <see cref="MaxEnergy" />, so the cat's current energy may drop with it.</summary>

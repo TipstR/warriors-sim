@@ -340,6 +340,9 @@ Still to decide **[Open]**:
   is fun. Bored, rested warriors go hunting alone
 - Fresh-kill is real pieces of prey: fresh for a day, stale for a day (half
   the food), then crowfood. Cats take the freshest piece in eating order
+- Six kinds of prey (shrew, mouse, vole, bird, squirrel, rabbit) with sizes
+  and seasons. Big prey is hard, so weak hunters bring mice and shrews.
+  Rabbits and squirrels are shared
 - Catch chance from skill, diligence, energy (S-curve), season and how much
   prey the territory has left today
 - Fresh-kill pile with the feeding policy (see 6.4)

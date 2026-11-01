@@ -23,14 +23,30 @@ public static class Report {
 		Console.WriteLine($"Sickness deaths / run: {sicknessDeathsPerRun:0.0}");
 		Console.WriteLine();
 
-		var caught = results.Sum(r => r.MiceCaught);
+		var caught = results.Sum(r => r.PortionsCaught);
 		var meals = results.Sum(r => r.Meals);
 		if (caught > 0 && meals > 0)
 			Console.WriteLine($"Fresh-kill: {results.Sum(r => r.Crowfood) * 100f / caught:0.0}% of the prey rotted, "
 							  + $"{results.Sum(r => r.StaleMeals) * 100f / meals:0.0}% of the meals were stale");
+
+		var pieces = results.SelectMany(r => r.CaughtByKind).GroupBy(k => k.Key)
+			.ToDictionary(g => g.Key, g => g.Sum(k => (long)k.Value));
+		var allPieces = pieces.Values.Sum();
+		if (allPieces > 0)
+			Console.WriteLine("Prey caught (pieces): " + string.Join(", ", Enum.GetValues<PreyKind>()
+				.Select(k => $"{k.ToString().ToLowerInvariant()} {pieces.GetValueOrDefault(k) * 100f / allPieces:0}%")));
+
 		if (caught > 0)
 			Console.WriteLine($"Hunting alone: {results.Sum(r => r.HuntsAlone) / (float)(seeds * years):0} times a year, "
-							  + $"{results.Sum(r => r.MiceCaughtAlone) * 100f / caught:0}% of all prey");
+							  + $"{results.Sum(r => r.PortionsCaughtAlone) * 100f / caught:0}% of all prey");
+		var bands = new[] { "hunting under 45", "45–70", "70+" };
+		var perTrip = Enumerable.Range(0, 3)
+			.Select(b => (Trips: results.Sum(r => r.TripsBySkill[b]), Portions: results.Sum(r => r.PortionsBySkill[b])))
+			.Select((t, b) => t.Trips > 0 ? $"{bands[b]}: {t.Portions / t.Trips:0.0}" : null)
+			.Where(s => s != null)
+			.ToList();
+		if (perTrip.Count > 0)
+			Console.WriteLine($"  portions per trip alone, {string.Join(", ", perTrip)}");
 
 		Console.WriteLine("Warriors, deputy and leader by day (per tick): idle / all, average fun");
 		foreach (var season in Enum.GetValues<Season>()) {

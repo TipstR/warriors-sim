@@ -377,7 +377,8 @@ public partial class SimulationUi : Control {
 		var famine = clan.IsInFamine ? "   ·   FAMINE" : "";
 		_clanLabel.Text =
 			$"{clan.Name}: {clan.Cats.Count} cats ({clan.Cats.Count(c => c.Rank == Rank.Kit)} kits, "
-			+ $"{clan.Cats.Count(c => c.IsQueen)} queens)   ·   Fresh-kill pile: {clan.FreshKillPile.Mice} mice   ·   "
+			+ $"{clan.Cats.Count(c => c.IsQueen)} queens)   ·   Fresh-kill pile: {clan.FreshKillPile.Pieces} pieces "
+			+ $"({clan.FreshKillPile.Portions:0.#} portions)   ·   "
 			+ $"Leader: {clan.Leader?.Name ?? "none"}   ·   Deputy: {clan.Deputy?.Name ?? "none"}{famine}";
 	}
 

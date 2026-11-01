@@ -73,4 +73,18 @@ public class CatTests {
 		Assert.Equal(30, ravenpaw.Skills[SkillType.Hunting].Level, 3);
 		Assert.Equal(30, skills[SkillType.Hunting].Level, 3);
 	}
+
+	[Fact]
+	public void Eat_AMouseHelpsAStarvingCatRecoverAShrewDoesNot() {
+		var withMouse = new Cat("Ravenpaw", Rank.Apprentice, Sex.Tom, 8, 50);
+		var withShrew = new Cat("Graypaw", Rank.Apprentice, Sex.Tom, 8, 50);
+		withMouse.AddStarvationStack();
+		withShrew.AddStarvationStack();
+
+		withMouse.Eat(Tuning.PortionSatiation);
+		withShrew.Eat(Tuning.PortionSatiation * Tuning.PreyKinds[PreyKind.Shrew].Portions);
+
+		Assert.Equal(0, withMouse.StarvationStacks);
+		Assert.Equal(1, withShrew.StarvationStacks);
+	}
 }

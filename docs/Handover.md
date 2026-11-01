@@ -6,8 +6,36 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Living-world overhaul, step 4 of 4: prey kinds** (2026-11-01, not
+  committed yet). The overhaul is finished with this step. `PreyKind`:
+  shrew (0.5 portions), mouse (1), vole (1), bird (1.5), squirrel (2),
+  rabbit (3); a portion is what a mouse gives (`PortionSatiation`, was
+  `MouseSatiation`). `Tuning.PreyKinds` holds portions, hardness and season
+  weights (not tunable from the UI, it's a table). Every hunting attempt
+  rolls the kind by season, the catch chance is `CatchChance ^ hardness`,
+  so weak hunters mostly bring mice and shrews (trip alone: 1.4 portions
+  under 45 hunting, 2.3 at 70+). A cat eats at most one portion per tick;
+  a started fresh piece is finished first, so big prey gets shared (log:
+  "Thornkit, Bluestar shared a squirrel."). Otherwise the freshest piece,
+  of those the biggest, so leftover shrews rot. The leader and the
+  territory limit count portions (the leader still estimates as if every
+  catch were a mouse). `FreshKillPile.Pieces` / `.Portions` replace
+  `.Mice`; the two UI lines (`SimulationUi.cs`, `Camp.cs`) only got the new
+  text, the user may restyle them. `Patrol.Caught` (the pieces) and
+  `PortionsCaught` replace `MiceCaught`.
+  Two flaws found by the balance runs and fixed: (1) a shrew counted as a
+  full meal for the birth rule, so hungry Clans looked fed and grew 40%;
+  now a meal under one portion counts as partly missed. (2) Any food
+  removed a starvation stack, so shrews saved twice as many starving cats;
+  now only a real meal (at least `SatiationLossPerTick`, e.g. a mouse or
+  milk) removes one, a shrew or stale prey only stops new stacks.
+  Result (100 × 30): 0 died out, Clan as big as before, ceremony 55, 1 in
+  18 reaches 90+, but **5.4 starved per year instead of 7.8**, because
+  small pieces spread food over more cats. Open: the user decides whether
+  that is fine or starvation should be raised again (main lever:
+  `MinCrowdingFactor`).
 - **Living-world overhaul, step 3 of 4: fun need + hunting alone**
-  (2026-11-01, not committed yet). `cat.Fun` (0–`FunMax` 100), only for
+  (2026-11-01, `7a9db8a`). `cat.Fun` (0–`FunMax` 100), only for
   warriors, deputy and leader outside the nursery (`HasFunNeed`). Idling in
   camp loses `IdleFunLoss` (10) × `BoredomFactor` (0.5–1.5 by diligence),
   every kind of work (patrol, hunting alone, gathering, caring) gives
@@ -30,7 +58,7 @@ agents' own memory doesn't move between computers.
   amount of work decides *how many* idle; only new kinds of work (border
   patrols, guards, chores) will fill the camp's time.
 - **Living-world overhaul, step 2 of 4: energy instead of forced rest**
-  (2026-11-01, not committed yet). `_lastHunters` is gone. Awake cats lose
+  (2026-11-01, `7a9db8a`). `_lastHunters` is gone. Awake cats lose
   `IdleEnergyCost` (10) per tick, a patrol costs `PatrolEnergyCost` (30)
   in total, herb gathering `GatheringEnergyCost` (20), caring adds
   `CaringEnergyPerPatient` (5) per patient. The costs are collected during
@@ -60,7 +88,8 @@ agents' own memory doesn't move between computers.
   out, 7.4 starved per year), because the leader only hunts what is needed
   and the pile is eaten within a day. Rotting becomes the brake once cats
   hunt on their own (step 3).
-- **Plan for the overhaul** (user, 2026-11-01). Goal: an immersive world
+- **Plan for the overhaul** (user, 2026-11-01; all four steps done, the
+  "Later" list is still open). Goal: an immersive world
   where cats act on their own. Steps:
   1. Prey as items with freshness (done, see above).
   2. **Energy instead of the forced rest.** The user hates the rule "a cat
