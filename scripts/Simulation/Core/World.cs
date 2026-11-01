@@ -90,7 +90,7 @@ public partial class World {
 			AdvancePregnancies();
 			LogDaySummary();
 
-			if (Day % Tuning.DaysPerMoon == 0) {
+			if ((Day % Tuning.DaysPerMoon) == 0) {
 				AgeOneMoon();
 				FadeUnusedSkills();
 				FindMates();
@@ -171,11 +171,14 @@ public partial class World {
 			var diligence = _random.Next(Tuning.SkillMin + 20, Tuning.SkillMax - 19);
 			var huntingGift = RollGift(mother.Skills[SkillType.Hunting].Gift, FathersGift(father, SkillType.Hunting));
 			var mentoringGift = RollGift(mother.Skills[SkillType.Mentoring].Gift, FathersGift(father, SkillType.Mentoring));
-			var kit = new Cat(prefix + CatNames.KitSuffix, Rank.Kit, sex, 0, 0, diligence,
-				huntingGift, mentoringGift, mother, father);
 			var healingGift = RollHealingGift(mother.Skills[SkillType.Healing].Gift,
 				FathersGift(father, SkillType.Healing));
-			kit.SetSkill(SkillType.Healing, 0, healingGift);
+
+			var kit = new Cat(prefix + CatNames.KitSuffix, Rank.Kit, sex, 0, diligence, new Dictionary<SkillType, Skill> {
+				[SkillType.Hunting] = new(0, huntingGift),
+				[SkillType.Healing] = new(0, healingGift),
+				[SkillType.Mentoring] = new(Tuning.StartingMentoring, mentoringGift)
+			}, mother, father);
 			Clan.AddCat(kit);
 			kits.Add(kit);
 		}

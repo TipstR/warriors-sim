@@ -105,7 +105,9 @@ public partial class SimulationUi : Control {
 			return false;
 		}
 
-		var cat = new Cat(name, rank, sex, ageMoons, hunting, diligence);
+		var cat = new Cat(name, rank, sex, ageMoons, diligence, new Dictionary<SkillType, Skill> {
+			[SkillType.Hunting] = new(hunting, Tuning.AverageGift)
+		});
 		clan.AddCat(cat);
 
 		if (World != null)

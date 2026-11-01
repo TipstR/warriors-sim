@@ -11,19 +11,29 @@ public class Cat {
 	/// <summary>Until which day the cat can't catch a sickness again, because it just had it.</summary>
 	private readonly Dictionary<ConditionType, int> _immuneUntilDay = new();
 
-	public Cat(string name, Rank rank, Sex sex, int ageMoons, int hunting, int diligence,
-		int huntingGift = Tuning.AverageGift, int mentoringGift = Tuning.AverageGift,
-		Cat mother = null, Cat father = null) {
+	/// <param name="skills">
+	///     The cat's skills. Skills that are missing get a default, see <see cref="Skills" />. The cat gets its
+	///     own copies, so the same <see cref="Skill" /> objects can't end up shared by two cats.
+	/// </param>
+	public Cat(string name, Rank rank, Sex sex, int ageMoons, int diligence,
+				IReadOnlyDictionary<SkillType, Skill> skills = null,
+				Cat mother = null, Cat father = null) {
+
 		(Prefix, Suffix) = CatNames.Split(name);
 		Rank = rank;
 		Sex = sex;
 		AgeMoons = ageMoons;
 		Diligence = Math.Clamp(diligence, Tuning.SkillMin, Tuning.SkillMax);
 		_skills = new Dictionary<SkillType, Skill> {
-			[SkillType.Hunting] = new(hunting, huntingGift),
+			[SkillType.Hunting] = new(0, Tuning.AverageGift),
 			[SkillType.Healing] = new(0, Tuning.AverageHealingGift),
-			[SkillType.Mentoring] = new(Tuning.StartingMentoring, mentoringGift)
+			[SkillType.Mentoring] = new(Tuning.StartingMentoring, Tuning.AverageGift)
 		};
+		if (skills != null) {
+			foreach (var (type, skill) in skills)
+				_skills[type] = new Skill(skill.Level, skill.Gift);
+		}
+
 		Mother = mother;
 		Father = father;
 		Satiation = Tuning.SatiationMax;
@@ -79,19 +89,21 @@ public class Cat {
 
 	/// <summary>
 	///     Every skill the cat has, with its level and gift, e.g. <c>cat.Skills[SkillType.Hunting].Level</c>.
-	///     A new cat gets its hunting from the constructor. Healing starts at 0 with the low average gift
-	///     (<see cref="Tuning.AverageHealingGift" />), because a gift for healing is rare. Mentoring starts at
-	///     <see cref="Tuning.StartingMentoring" /> with the mentoring gift from the constructor.
+	///     A new cat gets its skills from the constructor. A skill it doesn't get there starts with a default:
+	///     hunting at 0 with the average gift, healing at 0 with the low average gift
+	///     (<see cref="Tuning.AverageHealingGift" />), because a gift for healing is rare, and mentoring at
+	///     <see cref="Tuning.StartingMentoring" /> with the average gift.
 	/// </summary>
 	public IReadOnlyDictionary<SkillType, Skill> Skills => _skills;
 
-	/// <summary>
-	///     Gives the cat a new level and gift for a skill, e.g. for cats that start the game or a kit's inherited gift.
-	///     Not for learning: use <see cref="Skill.Improve" /> for that.
-	/// </summary>
-	public void SetSkill(SkillType type, float level, int gift) {
-		_skills[type] = new Skill(level, gift);
-	}
+	// Not used anymore: skills are given in the constructor now. Kept in case a tool needs to change a cat's
+	// skills later, e.g. the dev tool. Delete it if nothing needs it.
+	// /// <summary>
+	// ///     Gives the cat a new level and gift for a skill. Not for learning: use <see cref="Skill.Improve" /> for that.
+	// /// </summary>
+	// public void SetSkill(SkillType type, float level, int gift) {
+	// 	_skills[type] = new Skill(level, gift);
+	// }
 
 	/// <summary>How hard-working the cat is. Lazy cats hunt worse.</summary>
 	public int Diligence { get; }

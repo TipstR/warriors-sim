@@ -6,6 +6,15 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Cat constructor takes the skills as a dictionary** (user's idea,
+  2026-11-01): `new Cat(name, rank, sex, ageMoons, diligence, skills, mother,
+  father)` with `skills` a `Dictionary<SkillType, Skill>`. Skills that aren't
+  in it get a default (see `Cat.Skills`), and the cat copies the `Skill`
+  objects so two cats never share one. `StartingClans.cs` now has one block
+  per cat with all its skills in it (the user may clean this up later).
+  `Cat.SetSkill` is commented out because nothing uses it; the user hasn't
+  decided yet whether a tool will need it. Balance runs identical
+  before/after.
 - **Making the simulation observable (in progress).** Goal (user,
   2026-10-29): watch the running simulation in a 2D camp, camera following a
   chosen cat, no player yet. Later it must play like an RPG: you are one cat,
@@ -72,7 +81,8 @@ agents' own memory doesn't move between computers.
   warrior ~54 hunting, about 1 in 450 starts with 90+. Medicine apprentice
   gain 7.5.
 - **Skill refactor** (`1d76940`): `cat.Skills[SkillType.Hunting].Level` /
-  `.Gift`, `cat.SetSkill(...)` for setup. Proven identical logs before/after.
+  `.Gift`. Proven identical logs before/after. (Setup was `cat.SetSkill(...)`
+  then, now the constructor takes the skills, see above.)
 - **Unit tests** (`4f6f2d7`): `tests/WarriorsSim.Tests`, xUnit, see CLAUDE.md.
 - **Frailty by age, not rank** (`33d523b`, `57a8dca`, `478fe33`): used for
   starvation, sickness recovery, greencough risk, "feed the vulnerable"

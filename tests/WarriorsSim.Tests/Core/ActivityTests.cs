@@ -75,7 +75,7 @@ public class ActivityTests {
 		var died = new List<Cat>();
 		clan.CatAdded += added.Add;
 		clan.CatDied += died.Add;
-		var cat = new Cat("Graystripe", Rank.Warrior, Sex.Tom, 20, 50, 50);
+		var cat = new Cat("Graystripe", Rank.Warrior, Sex.Tom, 20, 50);
 
 		clan.AddCat(cat);
 		clan.RecordDeath(cat);
