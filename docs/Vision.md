@@ -95,6 +95,13 @@ difference. Balancing should keep the gap between weak and strong cats large.
 - Number of cats: **similar to the books**. **[Decided]** As a working
   estimate: 4 Clans of about 25–35 cats each, plus loners, rogues and
   kittypets, around **120–150 cats** in total. **[Proposed]**
+- **One connected forest without loading screens**, so borders, chases and
+  patrols walking off into the trees work. Built from one scene per
+  territory placed side by side; separate scenes with a transition only for
+  special places (Moonstone, Twolegplace). The map stays in memory; what
+  loads and unloads are the cats in detail (see 6.6). **[Proposed]**
+- How big a territory should feel (one or five minutes to walk across), and
+  whether maps are drawn by hand or partly generated. **[Open]**
 
 ## 4. Clans and Politics
 
@@ -115,7 +122,17 @@ difference. Balancing should keep the gap between weak and strong cats large.
 - The player can **speed up time**, even skipping **weeks or months**.
   **[Decided]**
 - How long one in-game day takes at normal speed is a balancing question.
-  **[Open]**
+  **[Open]** For watching the camp, one tick takes 15 seconds, so a day is a
+  minute. **[Decided]** Once the player walks around in a real world, a day
+  will have to be much longer (10–20 minutes, like Stardew Valley).
+  **[Proposed]**
+- **The 4 ticks per day stay the planning rhythm** (like CK3's days or
+  RimWorld's long ticks). More ticks would change every balancing value,
+  which are all "per tick". Varied timings come from activities with their
+  own start time and duration (see 6.5), not from more ticks. **[Proposed]**
+- How fast time runs (seconds per tick) never changes the results: the same
+  seed gives the same story at every speed. Time skips depend on that.
+  **[Proposed]**
 
 ## 6. Systems
 
@@ -210,6 +227,13 @@ The rest of the game (fresh-kill pile, needs, leader decisions) only looks at
 the results. The three daily patrol slots are the main points where activities
 get assigned.
 
+First step built: every cat has an activity per tick (in camp, sleeping,
+resting, hunting, training, gathering herbs, caring), and the simulation
+reports patrols, meals, births and deaths. Places and times don't exist yet:
+the camp makes up when a patrol leaves and comes back. Next, the simulation
+should hand out these times itself (a patrol to Sunningrocks takes longer
+than one to the Owl Tree). **[Proposed]**
+
 ### 6.6 Simulation Levels (Sim LODs)
 
 The whole world is simulated at all times. **[Decided]** Things the player
@@ -247,6 +271,12 @@ Still to decide **[Open]**:
 
 - Engine: **Godot 4.7** with **C#**. **[Decided]**
 - Playable as a **top-down 2D RPG**. **[Decided]**
+- Pixel art at its **real size**: cats are 32 pixels, tiles 16×16 pixels, and
+  the camera zooms in instead of scaling single sprites. **[Decided]**
+- The ground is a tilemap. Cliffs, tree trunks, gorse, bramble, rock and
+  water block, and cats find their way around them. Later: transitions
+  between ground types with autotiling (Godot terrains), and big objects
+  (Highrock, trees) as sprites on their own layer. **[Proposed]**
 
 ## 8. Roadmap
 
@@ -268,6 +298,11 @@ Still to decide **[Open]**:
   **[Decided]**
 - First RPG elements: basic hunting and fighting. **[Decided]**
 - This adds the **full simulation level** for one territory. **[Proposed]**
+- Before a player cat, the simulation is made **watchable**: the camp in 2D,
+  the camera follows a chosen cat, no player yet. It must still feel alive,
+  which is what the RPG is built on. **[Decided]**
+- **Status: started.** ThunderClan's camp runs the simulation live, see
+  section 9.
 
 ### Later **[Proposed]**
 
@@ -335,6 +370,23 @@ Still to decide **[Open]**:
 - All balancing values in `scripts/Simulation/Core/Tuning.cs`, the rules in
   `docs/Milestone1.md`
 
+**The camp (first piece of the 2D world)**
+
+- `game/camp/camp.tscn`: ThunderClan's camp after the books (a ravine with
+  Highrock, the dens around the clearing, the gorse tunnel), painted with
+  placeholder tiles
+- The simulation runs live, one tick every 15 seconds. Every cat walks to
+  where its activity takes it: patrols leave through the gorse tunnel and
+  come back with prey, sleeping and sick cats lie in their den, hungry cats
+  go to the fresh-kill pile, awake cats wander around
+- Every cat acts at its own time within a tick, so the camp doesn't move in
+  step
+- Cats find their way around walls and stay in camp unless they go out
+- Click a cat to follow it; a line at the top shows the time and what the
+  cat is doing
+- One shared cat sprite for the player and the simulated cats, so new
+  animations are added once
+
 ### Lessons from balancing
 
 - The simulation tips over easily. Every downward spiral (hunger → weakness
@@ -364,7 +416,10 @@ Still to decide **[Open]**:
    leaders) in a separate log that reads like the Clan's history.
 5. **Relationships and personality:** replace the placeholder rule for
    mates, leader styles from personality.
-6. **Milestone 2:** the first territory as a 2D world.
+6. **Milestone 2:** the first territory as a 2D world. Started with the
+   camp. Next for the camp: night, a camp log, speed buttons, prey on the
+   pile, pelt colours; then activities with places and times from the
+   simulation.
 
 ## 10. Story Mode (Idea)
 

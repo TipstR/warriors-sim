@@ -58,7 +58,20 @@ When moving a script, move its `.uid` file with it.
 - `ui/simulation_ui/` – `simulation_ui.tscn` + `SimulationUi.cs`: the dev tool
   and main scene (tabs: Clan, Tuning, Simulation). The user built the layout
   in the editor, the code finds nodes by unique name (`%Name`).
-- `assets/` – shared assets (later `sprites/`, `audio/`, `fonts/`). Assets that
+- `game/` – the playable 2D world.
+  - `camp/`: `camp.tscn` + `Camp.cs` run the simulation in real time and show
+    it (one tick every `SecondsPerTick`). The user painted the camp on the
+    `Ground` TileMapLayer; the Marker2D nodes under `Spots` (dens, clearing,
+    fresh-kill pile, exit) tell the cats where to go. The `Navigation`
+    region bakes the walkable area from the blocking tiles at start.
+  - `cat/`: `cat_view.tscn` + `CatView.cs` (one simulated cat: walks along
+    paths, wanders near its spot), `cat_sprite.tscn` + `CatSprite.cs` (the
+    animations, shared with the player).
+  - `Player.tscn`, `scripts/Player.cs`: the user's keyboard-controlled cat
+    (not used by the camp yet), `pallet_swap.tres`: the palette-swap shader.
+- `assets/` – shared assets: `cat/` (the user's sprite sheets and palettes),
+  `tiles/` (`forest_tiles.tres`, the TileSet with collisions on blocking
+  tiles, and its placeholder picture). Later `audio/`, `fonts/`. Assets that
   belong to one feature go into that feature's folder.
 - `tests/WarriorsSim.Tests/` – unit tests (xUnit). The project compiles
   `scripts/Simulation/**/*.cs` directly, so the tests don't need Godot. Test

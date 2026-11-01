@@ -1,4 +1,4 @@
-# Handover – State and TODO (2026-10-29)
+# Handover – State and TODO (2026-11-01)
 
 For the next agent, on any machine. Read `CLAUDE.md` first. This file holds
 what's in progress, what's planned and the user's decisions, because the
@@ -15,17 +15,39 @@ agents' own memory doesn't move between computers.
   `Cat.SetSkill` is commented out because nothing uses it; the user hasn't
   decided yet whether a tool will need it. Balance runs identical
   before/after.
-- **Making the simulation observable (in progress).** Goal (user,
-  2026-10-29): watch the running simulation in a 2D camp, camera following a
-  chosen cat, no player yet. Later it must play like an RPG: you are one cat,
-  the rest is simulated and must feel alive. Simulation side, step 1 done:
-  `cat.Activity` (what the cat did last tick: InCamp, Sleeping, Resting,
-  Hunting, Training, GatheringHerbs, Caring; where in camp comes from
-  `cat.Den`), `World.PatrolSent` (a `Patrol`: cats, training or not, mice),
-  `World.CatAte`, `Clan.CatAdded` / `Clan.CatDied`. Logs identical before and
-  after. The user wants help with the Godot side (camp scene, a cat view
-  driven by the simulation, a clock node that ticks the world). Pelt colours
-  wait until the user has retextured the animations.
+- **The simulation can be watched in a 2D camp** (2026-10-29 to 10-30).
+  Goal (user): watch the running simulation, camera following a chosen cat,
+  no player yet. Later it must play like an RPG: you are one cat, the rest
+  is simulated and must feel alive.
+  - *Simulation side:* `cat.Activity` (what the cat did last tick: InCamp,
+    Sleeping, Resting, Hunting, Training, GatheringHerbs, Caring; where in
+    camp comes from `cat.Den`), `World.PatrolSent` (a `Patrol`: cats,
+    training or not, mice), `World.CatAte`, `Clan.CatAdded` /
+    `Clan.CatDied`. Logs identical before and after.
+  - *Godot side:* `game/camp/camp.tscn` (run with F6) owns the `World` and
+    ticks it every `SecondsPerTick` (15 s, a day is a minute; safe to change
+    for testing, the results stay the same). After each tick `Camp.cs` plans
+    a timetable: every cat takes up its activity at its own random time,
+    patrols leave and come back at different times, hungry cats go to the
+    pile spread over the tick. All visual, Godot's random, never the
+    simulation's. Click a cat to follow it. Every cat is a
+    `game/cat/cat_view.tscn` (`CatView.cs`: walking, wandering near its
+    spot). `cat_sprite.tscn` + `CatSprite.cs` hold the animations and are
+    shared with `Player.tscn`, so new animations are added once.
+  - *World at real pixel size:* 32-pixel cats, 16-pixel tiles, the camera
+    zooms ×2 instead of scaling sprites. The ground is the `Ground`
+    TileMapLayer with placeholder tiles (`assets/tiles/`, 11 tiles: grass,
+    undergrowth, sand, dirt, den floor, rock, water, gorse, cliff, tree
+    trunk, bramble). The user painted the camp after the books (a ravine,
+    Highrock, the dens around the clearing, the gorse tunnel).
+  - *Walls and paths:* rock, water, gorse, cliff, tree trunk and bramble
+    have a collision in the TileSet. The `Navigation` region bakes the
+    walkable area from them when the camp starts (layers in the group
+    `navigation_obstacles`), and every cat follows a path
+    (`NavigationAgent2D`). A random spot only counts if it is near on foot,
+    otherwise cats walked around the whole camp to a spot behind a thin wall.
+  - Pelt colours wait until the user has retextured the animations (the
+    palettes for the book cats are in `assets/cat/palettes/`).
 
 - **Skill overhaul done (step 4: minimum for the warrior ceremony).** At
   12 moons an apprentice only becomes a warrior with at least
@@ -118,12 +140,21 @@ patrols) may need tuning; the user wants to tune balance later.
 4. **Check starvation** (~7 per year). `MinCrowdingFactor` is the main lever.
 5. **Later, an explorer** that prints the feeding order with each score part
    (needs `FeedingPolicy.Score` to return its parts) and can sweep a weight.
-6. **UI is the user's area, don't change it unasked** (only minimal fixes when
+6. **Next steps for the camp** (none started, the user picks): darker at
+   night, a camp log of the important events, speed buttons, prey visible on
+   the pile, pelt palettes per cat once the animations are retextured. Bigger
+   ones: activities that get their times from the simulation (a patrol to
+   Sunningrocks takes longer than one to the Owl Tree, see Vision 6.5),
+   Highrock walkable on top for Clan meetings, a sand–grass terrain set
+   (autotiling) as a placeholder so the user can learn the terrain brush.
+   The camp itself (`camp.tscn`, tiles, markers) is the user's: when asked to
+   enlarge or change it, scale their shape, never redesign it.
+7. **UI is the user's area, don't change it unasked** (only minimal fixes when
    a refactor breaks the build). Useful properties: `cat.Skills`,
    `cat.Conditions`, `IsSick`, `IsConfined`, `InMedicineDen`, `Mentor`,
    `MentorFactor`, `cat.Skills[SkillType.Mentoring]`, `Skill.Peak`,
    `Clan.HerbStore.Doses(herb)`.
-7. **Later ideas the user wants:** warriors becoming medicine cats (like
+8. **Later ideas the user wants:** warriors becoming medicine cats (like
    Cinderpelt), remembering every apprentice a cat trained, the rule that a
    deputy must have had an apprentice, loners and kittypets joining for new
    blood, "volunteer work" (warriors hunting for sport, practicing skills).
@@ -146,6 +177,11 @@ patrols) may need tuning; the user wants to tune balance later.
   the change and compare it byte by byte afterwards. Same seed must give the
   same log.
 - Ask before many long runs when the user is on battery.
+- **The camp:** run `game/camp/camp.tscn` (F6 in Godot). Debug → Visible
+  Navigation shows the walkable area. For automated checks, a temporary
+  GDScript (`--path . -s test.gd`) can load the camp, read the cat views and
+  save screenshots; delete it afterwards. GDScript can't read the C# `Cat`
+  object, use the name label (`%NameLabel`) instead.
 
 ## Design decisions by the user
 
@@ -167,3 +203,21 @@ patrols) may need tuning; the user wants to tune balance later.
   Apprentices stay apprentices until they reach the minimum (40), which every
   cat must be able to reach.
 - Balance doesn't have to be perfect before committing; commit working steps.
+- Observing first, no player cat yet, but it must later play like an RPG
+  (one cat, the rest simulated and alive). The camera follows a chosen cat.
+  The camp is its own scene, one tick takes 15 seconds.
+- Art: 16×16 tiles, real pixel size (32-pixel cats), the camera zooms.
+  Blocking tiles: rock, water, gorse, cliff, tree trunk, bramble.
+- Code style: tabs (in `.editorconfig`).
+
+Proposed by Claude, not answered by the user yet:
+
+- The world: one connected forest without loading screens, built from one
+  scene per territory; separate scenes only for special places (Moonstone,
+  Twolegplace). No streaming until it's needed. Open: how big a territory
+  should feel (one or five minutes to cross), hand-drawn or generated maps.
+- Time: 4 ticks per day stay the planning rhythm. Varied timings come from
+  activities with their own start and duration, not from more ticks. A real
+  world to walk in will need much longer days (10–20 minutes, like
+  Stardew). Speed (seconds per tick) can change freely; the same seed must
+  give the same story at every speed.
