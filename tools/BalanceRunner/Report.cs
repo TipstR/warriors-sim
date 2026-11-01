@@ -23,6 +23,13 @@ public static class Report {
 		Console.WriteLine($"Sickness deaths / run: {sicknessDeathsPerRun:0.0}");
 		Console.WriteLine();
 
+		var caught = results.Sum(r => r.MiceCaught);
+		var meals = results.Sum(r => r.Meals);
+		if (caught > 0 && meals > 0)
+			Console.WriteLine($"Fresh-kill: {results.Sum(r => r.Crowfood) * 100f / caught:0.0}% of the prey rotted, "
+							  + $"{results.Sum(r => r.StaleMeals) * 100f / meals:0.0}% of the meals were stale");
+		Console.WriteLine();
+
 		Console.WriteLine("Hunting skill (cats born in the run, no medicine cats):");
 		PrintSpread("  at the ceremony", results.SelectMany(r => r.CeremonyHunting).ToList());
 		PrintSpread("  at 48 moons", results.SelectMany(r => r.HuntingAt48Moons).ToList());

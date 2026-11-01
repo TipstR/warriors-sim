@@ -348,6 +348,16 @@ public static class Tuning {
 	[TuningGroup("Satiation")] public static float EatBelowSatiation = 75f;
 	[TuningGroup("Satiation")] public static float MouseSatiation = 25f;
 
+	// Fresh-kill
+	/// <summary>How many days a piece of prey stays fresh after it was caught.</summary>
+	[TuningGroup("Fresh-kill")] public static float PreyFreshDays = 1f;
+
+	/// <summary>How many days prey is stale after that. Then it is crowfood and gets thrown out.</summary>
+	[TuningGroup("Fresh-kill")] public static float PreyStaleDays = 1f;
+
+	/// <summary>How much of its food a stale piece still gives (0.5 = half).</summary>
+	[TuningGroup("Fresh-kill")] public static float StalePreyFoodShare = 0.5f;
+
 	public static float SatiationLossPerTick => SatiationMax / TicksUntilEmpty;
 
 	/// <summary>

@@ -51,7 +51,7 @@ When moving a script, move its `.uid` file with it.
     them. Also `TimeOfDay`, `Season`, `LogLevel`.
   - `Cats/`: `Cat.cs`, `CatNames.cs`, `Rank`, `Sex`, `Skill.cs` (a skill's level
     and gift; every cat has one per `SkillType` in `cat.Skills`).
-  - `Clan/`: `Clan.cs`, `FreshKillPile.cs`, `FeedingPolicy.cs` (leader styles),
+  - `Clan/`: `Clan.cs`, `FreshKillPile.cs` + `Prey.cs` (pieces that go bad), `FeedingPolicy.cs` (leader styles),
     `StartingClans.cs` (ThunderClan from *Into the Wild*), `Den`.
   - `Health/`: `Condition.cs` (a sickness or injury), `Herb.cs` (herb store),
     sickness and medicine cats.

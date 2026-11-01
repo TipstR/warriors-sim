@@ -28,6 +28,8 @@ public partial class World {
 
 	// Statistics for the moon summary
 	private int _miceCaughtThisMoon;
+	private int _crowfoodThisMoon;
+	private int _staleMealsThisMoon;
 	private int _timesStarvedThisMoon;
 	private int _timesExhaustedThisMoon;
 	private int _deathsThisMoon;
@@ -61,6 +63,9 @@ public partial class World {
 	/// <summary>The current moon, starting at 1.</summary>
 	public int Moon => (Day - 1) / Tuning.DaysPerMoon + 1;
 
+	/// <summary>How many ticks have passed since the start: 0 at dawn of day 1, 4 at dawn of day 2, ...</summary>
+	public int TickNumber => (Day - 1) * Tuning.TicksPerDay + (int)TimeOfDay;
+
 	/// <summary>Whether the cat slept during the last tick.</summary>
 	public bool IsSleeping(Cat cat) {
 		return _sleeping.Contains(cat);
@@ -72,6 +77,7 @@ public partial class World {
 			Log($"{Season} begins.", LogLevel.Summary);
 
 		_ateThisTick.Clear();
+		ThrowOutCrowfood();
 		UpdateNursery();
 		LoseSatiation();
 		DecideWhoSleeps();
@@ -723,7 +729,8 @@ public partial class World {
 			RollHuntingInjury(cat);
 		}
 
-		Clan.FreshKillPile.Add(total);
+		for (var i = 0; i < total; i++)
+			Clan.FreshKillPile.Add(new Prey(TickNumber));
 		_miceCaughtThisMoon += total;
 		Log($"Hunting patrol caught {total} mice ({string.Join(", ", catches)}). Pile: {Clan.FreshKillPile.Mice}");
 		PatrolSent?.Invoke(new Patrol(patrol, isTraining, total));
@@ -756,25 +763,44 @@ public partial class World {
 		return caught;
 	}
 
+	/// <summary>Prey that has rotted into crowfood is thrown out of the pile.</summary>
+	private void ThrowOutCrowfood() {
+		var thrownOut = Clan.FreshKillPile.ThrowOutCrowfood(TickNumber);
+		if (thrownOut == 0)
+			return;
+
+		_crowfoodThisMoon += thrownOut;
+		Log($"{thrownOut} pieces of prey had turned into crowfood and were thrown out. Pile: {Clan.FreshKillPile.Mice}");
+	}
+
 	private void FeedHungryCats() {
 		var ate = new List<Cat>();
 		var wentHungry = new List<Cat>();
 		// Remembered before eating, because eating ends starvation
 		var wasStarving = Clan.Cats.Where(c => c.IsStarving).ToHashSet();
 
-		foreach (var cat in Clan.CatsInEatingOrder().Where(c => c.IsHungry && c.CanEatPrey))
-			if (Clan.FreshKillPile.TryTakeMouse()) {
-				cat.Eat(Tuning.MouseSatiation);
-				_ateThisTick.Add(cat);
-				ate.Add(cat);
-				CatAte?.Invoke(cat);
-			}
-			else {
+		var ateStale = new List<Cat>();
+		// Whoever comes first in the eating order takes the freshest piece
+		foreach (var cat in Clan.CatsInEatingOrder().Where(c => c.IsHungry && c.CanEatPrey)) {
+			var prey = Clan.FreshKillPile.TakeBest();
+			if (prey == null) {
 				wentHungry.Add(cat);
+				continue;
 			}
+
+			if (prey.FreshnessAt(TickNumber) == Freshness.Stale)
+				ateStale.Add(cat);
+			cat.Eat(prey.FoodAt(TickNumber));
+			_ateThisTick.Add(cat);
+			ate.Add(cat);
+			CatAte?.Invoke(cat);
+		}
 
 		if (ate.Count > 0)
 			Log($"{ate.Count} cats ate ({Names(ate)}). Pile: {Clan.FreshKillPile.Mice}");
+		if (ateStale.Count > 0)
+			Log($"Only stale prey was left for {Names(ateStale)}.");
+		_staleMealsThisMoon += ateStale.Count;
 
 		if (wentHungry.Count > 0)
 			Log($"No prey left for {Names(wentHungry)}.");
@@ -828,13 +854,16 @@ public partial class World {
 			+ $"born: {_birthsThisMoon}, died: {_deathsThisMoon}, "
 			+ $"kits: {Clan.Cats.Count(c => c.Rank == Rank.Kit)}, queens: {Clan.Cats.Count(c => c.IsQueen)}, "
 			+ $"starving cats passed over: {_starvingPassedOverThisMoon}, "
-			+ $"mice caught: {_miceCaughtThisMoon}, "
+			+ $"mice caught: {_miceCaughtThisMoon}, crowfood thrown out: {_crowfoodThisMoon}, "
+			+ $"stale meals: {_staleMealsThisMoon}, "
 			+ $"meals missed: {_mealsMissedThisMoon}, times a cat starved: {_timesStarvedThisMoon}, "
 			+ $"times a cat was exhausted: {_timesExhaustedThisMoon}, "
 			+ $"pile: {Clan.FreshKillPile.Mice}, average satiation: {averageSatiation:0}, "
 			+ $"starving now: {starving}, {HealthSummary()}", LogLevel.Summary);
 
 		_miceCaughtThisMoon = 0;
+		_crowfoodThisMoon = 0;
+		_staleMealsThisMoon = 0;
 		_mealsMissedThisMoon = 0;
 		_timesStarvedThisMoon = 0;
 		_timesExhaustedThisMoon = 0;

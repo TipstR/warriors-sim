@@ -61,12 +61,21 @@ public class SeedResult {
 	public int Adults;
 	public int Reached90;
 	public int Reached95;
+
+	/// <summary>Fresh-kill: pieces caught, rotted into crowfood, and meals (all, and of stale prey).</summary>
+	public int MiceCaught;
+	public int Crowfood;
+	public int Meals;
+	public int StaleMeals;
 }
 
 /// <summary>Runs ThunderClan with one seed and collects statistics from the log and from the cats.</summary>
 public static class SeedRun {
 	private static readonly Regex PatrolLine = new(@"Hunting patrol caught \d+ mice \((.*)\)\. Pile");
 	private static readonly Regex CeremonyLine = new(@"has become a warrior: .*\(hunting (\d+)");
+
+	private static readonly Regex MoonPreyLine =
+		new(@"mice caught: (\d+), crowfood thrown out: (\d+), stale meals: (\d+)");
 	private static int TicksPerMoon => Tuning.TicksPerDay * Tuning.DaysPerMoon;
 	private static int TicksPerYear => TicksPerMoon * 12;
 
@@ -82,6 +91,7 @@ public static class SeedRun {
 		var apprentices = new HashSet<Cat>();
 
 		var world = new World(clan, seed, (_, line) => ReadLogLine(line, result, catchesThisYear));
+		world.CatAte += _ => result.Meals++;
 
 		for (var tick = 1; tick <= TicksPerYear * years; tick++) {
 			world.Tick();
@@ -139,6 +149,14 @@ public static class SeedRun {
 			var pairs = line[(line.IndexOf("Training patrol: ") + "Training patrol: ".Length)..].Split(", ");
 			result.Lessons += pairs.Length;
 			result.LessonsByHelpers += pairs.Count(p => p.Contains("(helping out)"));
+			return;
+		}
+
+		var moonPrey = MoonPreyLine.Match(line);
+		if (moonPrey.Success) {
+			result.MiceCaught += int.Parse(moonPrey.Groups[1].Value);
+			result.Crowfood += int.Parse(moonPrey.Groups[2].Value);
+			result.StaleMeals += int.Parse(moonPrey.Groups[3].Value);
 			return;
 		}
 
