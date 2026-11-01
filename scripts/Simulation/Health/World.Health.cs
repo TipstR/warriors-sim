@@ -40,12 +40,12 @@ public partial class World {
 	/// <summary>
 	///     A cat on a hunting patrol can get hurt. Tired cats get hurt more often, and lazy cats are more careless.
 	///     How bad it is is rolled between <see cref="Tuning.InjuryMinSeverity" /> and
-	///     <see cref="Tuning.InjuryMaxSeverity" />.
+	///     <see cref="Tuning.InjuryMaxSeverity" />. <paramref name="risk" /> multiplies the chance (e.g. hunting alone).
 	/// </summary>
-	private void RollHuntingInjury(Cat cat) {
+	private void RollHuntingInjury(Cat cat, float risk = 1f) {
 		var tiredness = 2f - cat.EnergyFactor;
 		var carelessness = 1.5f - (float)cat.Diligence / Tuning.SkillMax;
-		if (_random.NextDouble() >= Tuning.InjuryChancePerPatrol * tiredness * carelessness)
+		if (_random.NextDouble() >= Tuning.InjuryChancePerPatrol * tiredness * carelessness * risk)
 			return;
 
 		var severity = Tuning.InjuryMinSeverity

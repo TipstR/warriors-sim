@@ -332,8 +332,14 @@ Still to decide **[Open]**:
 
 **Hunting and food**
 
-- Leader sends as many patrols as needed, best hunters first, cats don't
-  hunt twice in a row, tired and sleeping cats are left out
+- Leader sends as many patrols as needed, best hunters first. A patrol
+  costs 30 energy, idling 10, a night's sleep restores 70, so a cat can
+  hunt up to three times a day and feels it the next day. Tired and
+  sleeping cats are left out
+- Warriors have a fun need: idling bores them (diligent cats faster), work
+  is fun. Bored, rested warriors go hunting alone
+- Fresh-kill is real pieces of prey: fresh for a day, stale for a day (half
+  the food), then crowfood. Cats take the freshest piece in eating order
 - Catch chance from skill, diligence, energy (S-curve), season and how much
   prey the territory has left today
 - Fresh-kill pile with the feeding policy (see 6.4)

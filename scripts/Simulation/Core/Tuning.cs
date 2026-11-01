@@ -147,18 +147,19 @@ public static class Tuning {
 	/// <summary>
 	///     How much an apprentice's hunting skill improves with every lesson on a training patrol, before its gift,
 	///     its teacher's <see cref="Cat.MentorFactor" /> and the difficulty. Together with
-	///     <see cref="ApprenticeHuntingGainPerMoon" />, tuned so that the average new warrior has about 54 hunting.
-	///     An apprentice gets about 37 lessons a moon, so this is a bit more than half of its training.
-	///     Tested with 100 seeds × 30 years: 0.158 gives new warriors ~54 hunting, 0 of 100 Clans died out.
+	///     <see cref="ApprenticeHuntingGainPerMoon" />, tuned so that the average new warrior has about 55 hunting.
+	///     An apprentice gets about 24 lessons a moon (one training patrol a day, at dawn), so this is a bit more
+	///     than half of its training. Tested with 100 seeds × 30 years: 0.22 gives new warriors ~55 hunting
+	///     (0.246: ~58, and twice as many cats reach 90+). It was 0.158 with ~37 lessons a moon.
 	///     Very sensitive: new warriors at 50.5 let 4 of 100 Clans die out, at 47 13, at 43 49 of 100.
 	/// </summary>
-	[TuningGroup("Mentors")] public static float HuntingLessonGain = 0.158f;
+	[TuningGroup("Mentors")] public static float HuntingLessonGain = 0.22f;
 
 	/// <summary>
 	///     How much a mentor's mentoring skill improves with every lesson it gives, before its gift and the difficulty.
-	///     With 0.06, mentors average ~42 mentoring and the best 10% have 85+.
+	///     With 0.08 (about 24 lessons a moon), mentors average ~42 mentoring and the best 10% have 80+.
 	/// </summary>
-	[TuningGroup("Mentors")] public static float MentoringPracticePerLesson = 0.06f;
+	[TuningGroup("Mentors")] public static float MentoringPracticePerLesson = 0.08f;
 
 	/// <summary>
 	///     A warrior who helps out for a hindered mentor learns this share of what the real mentor would
@@ -543,8 +544,29 @@ public static class Tuning {
 
 	// Energy
 	[TuningGroup("Energy")] public static float EnergyMax = 100f;
-	[TuningGroup("Energy")] public static int TicksUntilExhausted = 5;
+
+	/// <summary>Energy an awake cat uses in a tick when it doesn't work (in camp, resting in its nest).</summary>
+	[TuningGroup("Energy")] public static float IdleEnergyCost = 10f;
+
+	/// <summary>
+	///     Energy a hunting or training patrol (or hunting alone) uses. With 30, a cat can hunt at dawn, sunhigh and
+	///     evening and is nearly exhausted afterwards (10 left). A cat needs this much energy to go.
+	/// </summary>
+	[TuningGroup("Energy")] public static float PatrolEnergyCost = 30f;
+
+	/// <summary>Energy a herb gathering trip uses. A cat needs this much energy to go.</summary>
+	[TuningGroup("Energy")] public static float GatheringEnergyCost = 20f;
+
+	/// <summary>Extra energy a caregiver uses for every patient it cares for in a tick, on top of what it did else.</summary>
+	[TuningGroup("Energy")] public static float CaringEnergyPerPatient = 5f;
+
 	[TuningGroup("Energy")] public static float SleepBelowEnergy = 33f;
+
+	/// <summary>
+	///     Energy a sleeping cat gets back per tick. 70 is a "sleep tax": a cat that idled all day (70 left) is
+	///     rested the next morning, but one that hunted three times (10 left) starts the next day with 80 and
+	///     feels it.
+	/// </summary>
 	[TuningGroup("Energy")] public static float SleepEnergy = 70f;
 
 	/// <summary>Above this energy, tiredness has (almost) no effect.</summary>
@@ -553,7 +575,25 @@ public static class Tuning {
 	/// <summary>Below this energy, a cat can't do anything useful anymore.</summary>
 	[TuningGroup("Energy")] public static float EnergyPenaltyFull = 5f;
 
-	public static float EnergyLossPerTick => EnergyMax / TicksUntilExhausted;
+	// Fun
+	[TuningGroup("Fun")] public static float FunMax = 100f;
+
+	/// <summary>Fun an idle cat in camp loses per tick, times its <see cref="Cat.BoredomFactor" /> (diligent: 1.5).</summary>
+	[TuningGroup("Fun")] public static float IdleFunLoss = 10f;
+
+	/// <summary>Fun a cat gets from a tick of work: a patrol, hunting alone, gathering herbs or caring for the sick.</summary>
+	[TuningGroup("Fun")] public static float WorkFun = 30f;
+
+	/// <summary>
+	///     The chance per tick that a completely bored, fully rested cat goes hunting alone: from this for the laziest
+	///     cats up to <see cref="MaxHuntAloneChance" /> for the most diligent (see <see cref="Cat.HuntAloneChance" />).
+	/// </summary>
+	[TuningGroup("Fun")] public static float MinHuntAloneChance = 0.4f;
+
+	[TuningGroup("Fun")] public static float MaxHuntAloneChance = 0.6f;
+
+	/// <summary>Hunting alone is more dangerous: the injury chance is multiplied by this.</summary>
+	[TuningGroup("Fun")] public static float HuntAloneInjuryMultiplier = 1.5f;
 
 	// Hunting
 	[TuningGroup("Hunting")] public static int PatrolSize = 4;

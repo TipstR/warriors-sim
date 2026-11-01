@@ -143,6 +143,34 @@ public class Cat {
 	public bool IsExhausted => Energy < 1f;
 
 	/// <summary>
+	///     How much the cat enjoyed itself lately, from 0 (bored stiff) to <see cref="Tuning.FunMax" />. Idling in
+	///     camp drains it, every kind of work fills it. Only cats with <see cref="HasFunNeed" /> use it.
+	/// </summary>
+	public float Fun { get; private set; } = Tuning.FunMax;
+
+	/// <summary>For now only warriors, the deputy and the leader get bored. Queens in the nursery have their kits.</summary>
+	public bool HasFunNeed => Rank is Rank.Warrior or Rank.Deputy or Rank.Leader && !IsInNursery;
+
+	/// <summary>Diligent cats get bored faster: from 0.5 (diligence 0) to 1.5 (diligence 100).</summary>
+	public float BoredomFactor => 0.5f + (float)Diligence / Tuning.SkillMax;
+
+	/// <summary>
+	///     The chance that the cat goes hunting alone this tick, if it is free. The emptier its fun and the fuller its
+	///     energy, the more likely. 0 with full fun or without the energy for a hunt. A bored, rested cat goes with
+	///     <see cref="Tuning.MinHuntAloneChance" /> to <see cref="Tuning.MaxHuntAloneChance" />, by diligence.
+	/// </summary>
+	public float HuntAloneChance {
+		get {
+			var boredom = 1f - Fun / Tuning.FunMax;
+			var rested = Math.Clamp((Energy - Tuning.PatrolEnergyCost) / (Tuning.EnergyMax - Tuning.PatrolEnergyCost), 0f,
+				1f);
+			var diligence = (float)Diligence / Tuning.SkillMax;
+			var maxChance = Tuning.MinHuntAloneChance + (Tuning.MaxHuntAloneChance - Tuning.MinHuntAloneChance) * diligence;
+			return maxChance * boredom * rested;
+		}
+	}
+
+	/// <summary>
 	///     How long the cat has gone without food while starving. See <see cref="Tuning.StarvationStacksToDie" />.
 	/// </summary>
 	public int StarvationStacks { get; private set; }
@@ -333,6 +361,11 @@ public class Cat {
 
 	public void Sleep(float energy) {
 		Energy = Math.Min(MaxEnergy, Energy + energy);
+	}
+
+	/// <summary>Adds (or with a negative amount, removes) fun, between 0 and <see cref="Tuning.FunMax" />.</summary>
+	public void ChangeFun(float amount) {
+		Fun = Math.Clamp(Fun + amount, 0f, Tuning.FunMax);
 	}
 
 	public void AgeOneMoon() {

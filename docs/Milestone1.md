@@ -80,6 +80,10 @@ Medicine cats come later.
 - A cat eats when its satiation is **below 75** and there is prey on the
   pile, so it keeps a reserve for a missed meal and the night.
 - A cat eats **one mouse per tick** at most.
+- The pile holds real pieces of prey: **fresh** for 1 day after the catch,
+  then **stale** for 1 day (half the food), then **crowfood** that gets
+  thrown out. Every cat takes the freshest piece, so the last ones in the
+  eating order get the stale prey.
 - Kits younger than **1 moon** can't eat prey, only milk (see Nursery).
 - If there isn't enough prey for everyone, the leader's **feeding policy**
   decides who eats first. Every cat gets a score, and the highest score eats
@@ -105,12 +109,31 @@ The default is **Balanced**.
 
 ### Energy and sleep
 
-- An awake cat loses **20 energy per tick** (empty after 5 ticks).
+- An awake cat loses **10 energy per tick** in camp. Work costs more: a
+  hunting or training patrol **30** in total, a herb gathering trip **20**,
+  caring for the sick **+5 per patient**. A cat needs the energy for a trip
+  to go. A rested cat can hunt at dawn, sunhigh and evening and is nearly
+  exhausted afterwards.
 - Every cat sleeps at night. During the day, a cat with **33 energy or less**
   is tired and sleeps instead of going on patrol.
-- A sleeping cat gets **+70 energy** per tick, up to its max energy.
+- A sleeping cat gets **+70 energy** per tick, up to its max energy. A cat
+  that idled all day is rested the next morning, one that hunted three
+  times starts with 80 ("sleep tax").
 - Tiredness makes a cat hunt worse, along an S-curve: above **80 energy** it
   barely matters, towards **5 energy** the cat can do almost nothing.
+
+### Fun
+
+- Warriors, the deputy and the leader have **fun** (0–100, start full).
+  Queens in the nursery, apprentices, elders and kits don't get bored yet.
+- Idling in camp costs **10 fun per tick**, × **0.5** (diligence 0) to
+  **1.5** (diligence 100). Every kind of work gives **+30**. Sleeping and
+  lying sick change nothing.
+- After the leader's patrols, every free warrior may **hunt alone**. The
+  chance per tick: **40%** (diligence 0) to **60%** (diligence 100) × how
+  bored it is (1 − fun/100) × how rested (0 with 30 energy or less, 1 when
+  full). It costs patrol energy, the catch goes on the pile, and the
+  injury chance is **×1.5**.
 
 ### Starvation
 
@@ -159,7 +182,8 @@ The default is **Balanced**.
 - **Who can hunt:** apprentices, warriors, the deputy and the leader. Queens
   in the nursery (nursing, or less than **21 days** before the birth), kits
   and elders don't hunt, except in a famine (see above).
-- **Who is picked:** cats that are awake and were not on the last patrols.
+- **Who is picked:** cats that are awake and have at least **30 energy**
+  (one patrol). A cat can go on several patrols a day.
   First warriors and apprentices, then the leader and deputy, then the famine
   helpers. Within each group, the best catch chance first, so tired cats are
   picked later.
@@ -255,19 +279,19 @@ healing (for medicine cats, see `Tuning.cs`). Every skill has its own gift.
     32%, at 95 at 22%.
 - **Training:** an apprentice learns in two ways, about half each:
   - **in camp**, every moon: **5.25** × mentor factor.
-  - **on training patrols** (about 37 lessons a moon): **0.158** × the
+  - **on training patrols** (about 24 lessons a moon): **0.22** × the
     teacher's mentor factor per lesson.
   - Mentor factor: from **0.5** (mentoring 0) over **1** (mentoring 50) to
     **1.5** (mentoring 100). Without a mentor, an apprentice learns at
     **0.3** in camp.
 - **Training patrols:** outside a famine, the leader sends every apprentice
-  who can hunt out with a teacher, two pairs per patrol, before any other
-  patrol. The teacher is the apprentice's mentor. If the mentor can't come
-  (asleep, sick, hunted last time, ...), another warrior **helps out**,
+  who can hunt out with a teacher at **dawn** (once a day), two pairs per
+  patrol, before any other patrol. The teacher is the apprentice's mentor.
+  If the mentor can't come (asleep, sick, ...), another warrior **helps out**,
   preferably one without an apprentice. In a famine there are no training
   patrols, so apprentices learn more slowly in hard times.
 - **Mentoring** is a skill too. Every cat starts at **20**. A teacher gets
-  better with every lesson (**0.06**, a helper half of that). A medicine
+  better with every lesson (**0.08**, a helper half of that). A medicine
   cat learns it every moon it trains an apprentice. Mentoring never fades.
 - **Learning by doing:** every mouse a cat catches improves its hunting by
   **0.002**. Good hunters catch more and keep getting better.
@@ -322,6 +346,6 @@ predators; sim LODs; map and graphics; saving and loading.
 
 ## Open questions
 
-- In greenleaf, patrols catch more than the leader planned, and prey never
-  goes bad, so the pile can grow. Later, prey could go stale after a few days
-  (crow-food).
+- In greenleaf, patrols catch more than the leader planned. Prey goes bad
+  now, but only 0.8% rots, because the pile is eaten within a day. That
+  changes once cats hunt on their own.

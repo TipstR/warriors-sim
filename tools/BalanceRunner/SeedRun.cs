@@ -67,6 +67,18 @@ public class SeedResult {
 	public int Crowfood;
 	public int Meals;
 	public int StaleMeals;
+
+	public int HuntsAlone;
+	public int MiceCaughtAlone;
+
+	/// <summary>
+	///     By season, daytime ticks only: summed over the ticks, how many cats with a fun need (warriors, deputy,
+	///     leader) were idle in camp, how many there were, and their fun. DayTicks counts the ticks.
+	/// </summary>
+	public readonly long[] IdleWarriors = new long[4];
+	public readonly long[] Warriors = new long[4];
+	public readonly double[] WarriorFun = new double[4];
+	public readonly int[] DayTicks = new int[4];
 }
 
 /// <summary>Runs ThunderClan with one seed and collects statistics from the log and from the cats.</summary>
@@ -75,7 +87,9 @@ public static class SeedRun {
 	private static readonly Regex CeremonyLine = new(@"has become a warrior: .*\(hunting (\d+)");
 
 	private static readonly Regex MoonPreyLine =
-		new(@"mice caught: (\d+), crowfood thrown out: (\d+), stale meals: (\d+)");
+		new(@"mice caught: (\d+), crowfood thrown out: (\d+), stale meals: (\d+), hunts alone: (\d+) \((\d+) mice\)");
+
+	private static readonly Regex HuntAloneLine = new(@"\| (.+) went hunting alone and caught (\d+) mice");
 	private static int TicksPerMoon => Tuning.TicksPerDay * Tuning.DaysPerMoon;
 	private static int TicksPerYear => TicksPerMoon * 12;
 
@@ -94,11 +108,17 @@ public static class SeedRun {
 		world.CatAte += _ => result.Meals++;
 
 		for (var tick = 1; tick <= TicksPerYear * years; tick++) {
+			// The season and time of the tick that is about to run
+			var season = (int)world.Season;
+			var isDay = world.TimeOfDay != TimeOfDay.Night;
 			world.Tick();
 			if (clan.Cats.Count == 0) {
 				result.DiedOut = true;
 				break;
 			}
+
+			if (isDay)
+				CountIdleWarriors(clan, season, result);
 
 			if (tick % TicksPerMoon == 0) {
 				foreach (var cat in clan.Cats.Where(c => !startingCats.Contains(c) && !c.IsMedicineCat)) {
@@ -135,6 +155,16 @@ public static class SeedRun {
 		return result;
 	}
 
+	private static void CountIdleWarriors(Clan clan, int season, SeedResult result) {
+		result.DayTicks[season]++;
+		foreach (var cat in clan.Cats.Where(c => c.HasFunNeed)) {
+			result.Warriors[season]++;
+			result.WarriorFun[season] += cat.Fun;
+			if (cat.Activity == Activity.InCamp)
+				result.IdleWarriors[season]++;
+		}
+	}
+
 	private static void ReadLogLine(string line, SeedResult result, Dictionary<string, int> catchesThisYear) {
 		if (line.Contains("cats are left.")) {
 			if (line.Contains("starved to death"))
@@ -157,6 +187,16 @@ public static class SeedRun {
 			result.MiceCaught += int.Parse(moonPrey.Groups[1].Value);
 			result.Crowfood += int.Parse(moonPrey.Groups[2].Value);
 			result.StaleMeals += int.Parse(moonPrey.Groups[3].Value);
+			result.HuntsAlone += int.Parse(moonPrey.Groups[4].Value);
+			result.MiceCaughtAlone += int.Parse(moonPrey.Groups[5].Value);
+			return;
+		}
+
+		// Catches of cats hunting alone count for the best hunters' share too
+		var alone = HuntAloneLine.Match(line);
+		if (alone.Success) {
+			var name = alone.Groups[1].Value;
+			catchesThisYear[name] = catchesThisYear.GetValueOrDefault(name) + int.Parse(alone.Groups[2].Value);
 			return;
 		}
 

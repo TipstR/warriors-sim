@@ -200,6 +200,7 @@ public partial class World {
 			if (cared.Count == 0)
 				continue;
 
+			AddEnergyCost(caregiver, Tuning.CaringEnergyPerPatient * cared.Count);
 			// A helper who was out on patrol cares for them when it is back, so it still counts as patrolling
 			if (caregiver.Activity is Activity.InCamp or Activity.Sleeping)
 				caregiver.Activity = Activity.Caring;
@@ -276,21 +277,23 @@ public partial class World {
 	/// <summary>
 	///     When the store is low on any herb, the medicine cat apprentice goes gathering. The medicine cat only goes
 	///     itself if there's no apprentice and nobody is lying in the medicine den. Gatherers don't care for anyone
-	///     this tick. Cats who only learned a little healing never gather.
+	///     this tick. Cats who only learned a little healing never gather. Gatherers must be awake and have the
+	///     energy for the trip (<see cref="Tuning.GatheringEnergyCost" />).
 	/// </summary>
 	private List<Cat> ChooseGatherers(List<Cat> healers) {
 		var store = Clan.HerbStore;
 		if (Enum.GetValues<Herb>().All(h => store.Doses(h) >= Tuning.HerbStoreTarget))
 			return new List<Cat>();
 
-		var apprentices = healers.Where(c => c.Rank == Rank.MedicineCatApprentice).ToList();
+		var able = healers.Where(c => !IsSleeping(c) && c.Energy >= Tuning.GatheringEnergyCost).ToList();
+		var apprentices = able.Where(c => c.Rank == Rank.MedicineCatApprentice).ToList();
 		if (apprentices.Count > 0)
 			return apprentices;
 
 		var anyPatients = Clan.Cats.Any(c => c.InMedicineDen);
 		return anyPatients
 			? new List<Cat>()
-			: healers.Where(c => c.Rank == Rank.MedicineCat).Take(1).ToList();
+			: able.Where(c => c.Rank == Rank.MedicineCat).Take(1).ToList();
 	}
 
 	/// <summary>
@@ -299,6 +302,7 @@ public partial class World {
 	/// </summary>
 	private void GatherHerbs(Cat gatherer) {
 		gatherer.Activity = Activity.GatheringHerbs;
+		AddEnergyCost(gatherer, Tuning.GatheringEnergyCost - Tuning.IdleEnergyCost);
 		Healing(gatherer).Practice();
 		var skill = 0.5f + 0.5f * Healing(gatherer).Level / Tuning.SkillMax;
 		foreach (var herb in Enum.GetValues<Herb>()) {

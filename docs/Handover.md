@@ -6,8 +6,49 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
-- **Living-world overhaul, step 1 of 4: prey as items** (2026-11-01, not
-  committed yet). The pile holds real `Prey` pieces (`Clan/Prey.cs`, all
+- **Living-world overhaul, step 3 of 4: fun need + hunting alone**
+  (2026-11-01, not committed yet). `cat.Fun` (0–`FunMax` 100), only for
+  warriors, deputy and leader outside the nursery (`HasFunNeed`). Idling in
+  camp loses `IdleFunLoss` (10) × `BoredomFactor` (0.5–1.5 by diligence),
+  every kind of work (patrol, hunting alone, gathering, caring) gives
+  `WorkFun` (30), sleeping and lying sick change nothing (`World.UpdateFun`,
+  end of the tick). After the leader's patrols, every free warrior rolls
+  `Cat.HuntAloneChance` = max chance (`MinHuntAloneChance` 0.4 to
+  `MaxHuntAloneChance` 0.6 by diligence) × boredom (1 − fun/100) × rested
+  (0 at `PatrolEnergyCost` energy or less, 1 at full). Hunting alone costs
+  patrol energy, the catch goes on the pile, the injury chance is ×
+  `HuntAloneInjuryMultiplier` (1.5). It is sent as a patrol of one
+  (`PatrolSent`), so the camp shows it. Log: "Longtail went hunting alone
+  and caught 2 mice." The BalanceRunner prints hunts alone and idle
+  warriors and fun per season. Result (100 × 30): 0 died out, 7.8 starved,
+  ~1000 hunts alone a year (6% of the prey), 1.6% rots, **fading fixed**
+  (warriors 1%, leader and deputy 2% instead of 14% and 58%), best 20%
+  catch 45%. **Idle warriors barely change** (greenleaf 20 → 19, leaf-bare
+  ~8 of 32): the leader only hunts what is needed, so a cat hunting alone
+  replaces a patrol spot. With `IdleFunLoss` 20 there are twice as many
+  hunts alone and still the same idle count. Fun decides *who* works, the
+  amount of work decides *how many* idle; only new kinds of work (border
+  patrols, guards, chores) will fill the camp's time.
+- **Living-world overhaul, step 2 of 4: energy instead of forced rest**
+  (2026-11-01, not committed yet). `_lastHunters` is gone. Awake cats lose
+  `IdleEnergyCost` (10) per tick, a patrol costs `PatrolEnergyCost` (30)
+  in total, herb gathering `GatheringEnergyCost` (20), caring adds
+  `CaringEnergyPerPatient` (5) per patient. The costs are collected during
+  the tick (`World.AddEnergyCost`) and paid in `UpdateEnergy`, now after
+  `UpdateHealth`. `SleepEnergy` stays 70 (user: a "sleep tax", a cat that
+  worked overtime feels it the next day; later, with more ticks per day, a
+  cat should sleep longer after a hard day). A cat needs the energy for the
+  trip to be sent; gatherers must be awake now (they gathered at night
+  before). Training patrols only at dawn (placeholder), ~24 lessons a moon
+  instead of 37: `HuntingLessonGain` 0.158 → 0.22,
+  `MentoringPracticePerLesson` 0.06 → 0.08. Result (100 × 30, before
+  step 3): 0 died out, 7.9 starved, ceremony 55, 19% late, but the best
+  20% of hunters caught 47% of the mice (was 37%), 1 in 14 reached 90+
+  (was 1 in 18), leader and deputy faded (58%): the leader sends the best
+  hunters first and they can go three times a day. Step 3 fixes the
+  fading. Later: age and health change the energy costs (user).
+- **Living-world overhaul, step 1 of 4: prey as items** (2026-11-01,
+  `163b1c6`). The pile holds real `Prey` pieces (`Clan/Prey.cs`, all
   mice for now) that remember the tick they were caught in
   (`World.TickNumber`). Fresh for `PreyFreshDays` (1), then stale for
   `PreyStaleDays` (1, gives `StalePreyFoodShare` = half the food), then

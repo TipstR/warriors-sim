@@ -12,9 +12,11 @@ public partial class World {
 	private static int DaysPerSeason => Tuning.DaysPerMoon * Tuning.MoonsPerSeason;
 	private readonly Action<LogLevel, string> _log;
 	private readonly Random _random;
-	private List<Cat> _lastHunters = new();
 	private HashSet<Cat> _sleeping = new();
 	private readonly HashSet<Cat> _ateThisTick = new();
+
+	/// <summary>What the work of this tick costs each cat. Cats that aren't in here pay the idle cost.</summary>
+	private readonly Dictionary<Cat, float> _energyCostThisTick = new();
 	private int _mealsMissedThisMoon;
 	private int _miceCaughtToday;
 	private int _birthsThisMoon;
@@ -30,6 +32,8 @@ public partial class World {
 	private int _miceCaughtThisMoon;
 	private int _crowfoodThisMoon;
 	private int _staleMealsThisMoon;
+	private int _huntsAloneThisMoon;
+	private int _miceCaughtAloneThisMoon;
 	private int _timesStarvedThisMoon;
 	private int _timesExhaustedThisMoon;
 	private int _deathsThisMoon;
@@ -77,6 +81,7 @@ public partial class World {
 			Log($"{Season} begins.", LogLevel.Summary);
 
 		_ateThisTick.Clear();
+		_energyCostThisTick.Clear();
 		ThrowOutCrowfood();
 		UpdateNursery();
 		LoseSatiation();
@@ -85,12 +90,15 @@ public partial class World {
 
 		if (TimeOfDay != TimeOfDay.Night) {
 			SendHuntingPatrolsIfNeeded();
+			SendBoredCatsHuntingAlone();
 			FeedHungryCats();
 		}
 
-		UpdateEnergy();
 		UpdateStarvation();
 		UpdateHealth();
+		// After health, because caring for the sick and gathering herbs cost energy and are fun too
+		UpdateEnergy();
+		UpdateFun();
 
 		if (TimeOfDay == TimeOfDay.Night) {
 			AdvancePregnancies();
@@ -527,7 +535,10 @@ public partial class World {
 				: Activity.InCamp;
 	}
 
-	/// <summary>Sleeping cats regain energy, awake cats lose it. Happens at the end of a tick.</summary>
+	/// <summary>
+	///     Sleeping cats regain energy, awake cats lose it: a little in camp, more for work (see
+	///     <see cref="AddEnergyCost" />). Happens at the end of the tick, after all work is done.
+	/// </summary>
 	private void UpdateEnergy() {
 		foreach (var cat in Clan.Cats) {
 			if (_sleeping.Contains(cat)) {
@@ -536,13 +547,34 @@ public partial class World {
 			}
 
 			var wasExhausted = cat.IsExhausted;
-			cat.LoseEnergy(Tuning.EnergyLossPerTick);
+			cat.LoseEnergy(_energyCostThisTick.GetValueOrDefault(cat, Tuning.IdleEnergyCost));
 
 			if (cat.IsExhausted && !wasExhausted) {
 				Log($"{cat} is exhausted!");
 				_timesExhaustedThisMoon++;
 			}
 		}
+	}
+
+	/// <summary>
+	///     Every kind of work is fun. Idling in camp is boring, more so for diligent cats. Sleeping and lying sick in
+	///     the nest change nothing.
+	/// </summary>
+	private void UpdateFun() {
+		foreach (var cat in Clan.Cats.Where(c => c.HasFunNeed)) {
+			if (cat.Activity is Activity.Hunting or Activity.Training or Activity.GatheringHerbs or Activity.Caring)
+				cat.ChangeFun(Tuning.WorkFun);
+			else if (cat.Activity == Activity.InCamp)
+				cat.ChangeFun(-Tuning.IdleFunLoss * cat.BoredomFactor);
+		}
+	}
+
+	/// <summary>
+	///     Work costs energy on top of the idle cost, paid at the end of the tick in <see cref="UpdateEnergy" />.
+	///     A patrol adds <see cref="Tuning.PatrolEnergyCost" /> minus the idle cost, so it costs that much in total.
+	/// </summary>
+	private void AddEnergyCost(Cat cat, float extra) {
+		_energyCostThisTick[cat] = _energyCostThisTick.GetValueOrDefault(cat, Tuning.IdleEnergyCost) + extra;
 	}
 
 	/// <summary>
@@ -602,15 +634,18 @@ public partial class World {
 	}
 
 	/// <summary>
-	///     Outside a famine, the leader first sends the apprentices out on training patrols, even if the pile is full
-	///     (see <see cref="SendTrainingPatrols" />). Then, if the pile has fewer mice than there are cats, the leader
+	///     Outside a famine, the leader sends the apprentices out on training patrols at dawn, even if the pile is full
+	///     (see <see cref="SendTrainingPatrols" />). Once a day is a placeholder until training is split into its own
+	///     activities and apprentices have chores. Then, if the pile has fewer mice than there are cats, the leader
 	///     sends patrols until they are expected to catch enough to make up the difference, the training patrols'
 	///     catch included. The leader plans with normal hunting chances and doesn't account for the
 	///     season, so patrols bring back more than expected in greenleaf and less in leaf-bare.
 	/// </summary>
 	private void SendHuntingPatrolsIfNeeded() {
 		var available = AvailableHunters();
-		var hunters = Clan.IsInFamine ? new List<Cat>() : SendTrainingPatrols(available);
+		var hunters = Clan.IsInFamine || TimeOfDay != TimeOfDay.Dawn
+			? new List<Cat>()
+			: SendTrainingPatrols(available);
 		var expectedCatch = hunters.Sum(c => c.CatchChance * Tuning.AttemptsPerCat);
 
 		var miceNeeded = Clan.Cats.Count - Clan.FreshKillPile.Mice;
@@ -625,14 +660,11 @@ public partial class World {
 			SendHuntingPatrol(patrol);
 			hunters.AddRange(patrol);
 		}
-
-		if (hunters.Count > 0)
-			_lastHunters = hunters;
 	}
 
 	/// <summary>
 	///     Every apprentice who can hunt goes out with a teacher, two pairs per patrol. The leader pairs each
-	///     apprentice with its mentor. If the mentor can't go (asleep, sick, hunted last time, ...), another warrior
+	///     apprentice with its mentor. If the mentor can't go (asleep, sick, ...), another warrior
 	///     helps out, preferably one without an apprentice of its own. Apprentices without a teacher stay with the
 	///     normal patrols. Removes everyone it sends from <paramref name="available" /> and returns them.
 	/// </summary>
@@ -698,14 +730,15 @@ public partial class World {
 	}
 
 	/// <summary>
-	///     Cats that can hunt, are awake and were not out hunting last time, best hunters first.
-	///     Tired cats have a lower catch chance, so they are picked later.
+	///     Cats that can hunt, are awake and have the energy for a patrol, best hunters first. A cat may hunt all day
+	///     as long as its energy lasts. Tired cats have a lower catch chance, so they are picked later.
 	///     The leader and deputy come after the others, and in a famine elders and queens help as a last reserve.
 	/// </summary>
 	private List<Cat> AvailableHunters() {
 		var famine = Clan.IsInFamine;
 		return Clan.Cats
-			.Where(c => (famine ? c.CanHuntInFamine : c.CanHunt) && !_sleeping.Contains(c) && !_lastHunters.Contains(c))
+			.Where(c => (famine ? c.CanHuntInFamine : c.CanHunt) && !_sleeping.Contains(c)
+						&& c.Energy >= Tuning.PatrolEnergyCost)
 			.OrderBy(HuntingReserveOrder)
 			.ThenByDescending(c => c.CatchChance)
 			.ToList();
@@ -718,11 +751,36 @@ public partial class World {
 		return cat.Rank is Rank.Leader or Rank.Deputy ? 1 : 0;
 	}
 
+	/// <summary>
+	///     Bored warriors that the leader didn't send may go hunting on their own (see <see cref="Cat.HuntAloneChance" />).
+	///     The catch goes on the pile. Alone, a cat gets hurt more easily.
+	/// </summary>
+	private void SendBoredCatsHuntingAlone() {
+		foreach (var cat in Clan.Cats.Where(c => c.HasFunNeed && c.CanHunt && c.Activity == Activity.InCamp).ToList()) {
+			if (_random.NextDouble() >= cat.HuntAloneChance)
+				continue;
+
+			cat.Activity = Activity.Hunting;
+			AddEnergyCost(cat, Tuning.PatrolEnergyCost - Tuning.IdleEnergyCost);
+			var caught = Hunt(cat);
+			for (var i = 0; i < caught; i++)
+				Clan.FreshKillPile.Add(new Prey(TickNumber));
+			_miceCaughtThisMoon += caught;
+			_huntsAloneThisMoon++;
+			_miceCaughtAloneThisMoon += caught;
+
+			Log($"{cat.Name} went hunting alone and caught {caught} mice. Pile: {Clan.FreshKillPile.Mice}");
+			RollHuntingInjury(cat, Tuning.HuntAloneInjuryMultiplier);
+			PatrolSent?.Invoke(new Patrol(new[] { cat }, false, caught));
+		}
+	}
+
 	private void SendHuntingPatrol(List<Cat> patrol, bool isTraining = false) {
 		var catches = new List<string>();
 		var total = 0;
 		foreach (var cat in patrol) {
 			cat.Activity = isTraining ? Activity.Training : Activity.Hunting;
+			AddEnergyCost(cat, Tuning.PatrolEnergyCost - Tuning.IdleEnergyCost);
 			var caught = Hunt(cat);
 			total += caught;
 			catches.Add($"{cat.Name} {caught}");
@@ -856,6 +914,7 @@ public partial class World {
 			+ $"starving cats passed over: {_starvingPassedOverThisMoon}, "
 			+ $"mice caught: {_miceCaughtThisMoon}, crowfood thrown out: {_crowfoodThisMoon}, "
 			+ $"stale meals: {_staleMealsThisMoon}, "
+			+ $"hunts alone: {_huntsAloneThisMoon} ({_miceCaughtAloneThisMoon} mice), "
 			+ $"meals missed: {_mealsMissedThisMoon}, times a cat starved: {_timesStarvedThisMoon}, "
 			+ $"times a cat was exhausted: {_timesExhaustedThisMoon}, "
 			+ $"pile: {Clan.FreshKillPile.Mice}, average satiation: {averageSatiation:0}, "
@@ -864,6 +923,8 @@ public partial class World {
 		_miceCaughtThisMoon = 0;
 		_crowfoodThisMoon = 0;
 		_staleMealsThisMoon = 0;
+		_huntsAloneThisMoon = 0;
+		_miceCaughtAloneThisMoon = 0;
 		_mealsMissedThisMoon = 0;
 		_timesStarvedThisMoon = 0;
 		_timesExhaustedThisMoon = 0;

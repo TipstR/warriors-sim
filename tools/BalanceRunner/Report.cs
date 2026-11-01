@@ -28,6 +28,21 @@ public static class Report {
 		if (caught > 0 && meals > 0)
 			Console.WriteLine($"Fresh-kill: {results.Sum(r => r.Crowfood) * 100f / caught:0.0}% of the prey rotted, "
 							  + $"{results.Sum(r => r.StaleMeals) * 100f / meals:0.0}% of the meals were stale");
+		if (caught > 0)
+			Console.WriteLine($"Hunting alone: {results.Sum(r => r.HuntsAlone) / (float)(seeds * years):0} times a year, "
+							  + $"{results.Sum(r => r.MiceCaughtAlone) * 100f / caught:0}% of all prey");
+
+		Console.WriteLine("Warriors, deputy and leader by day (per tick): idle / all, average fun");
+		foreach (var season in Enum.GetValues<Season>()) {
+			var s = (int)season;
+			var ticks = results.Sum(r => (long)r.DayTicks[s]);
+			var warriors = results.Sum(r => r.Warriors[s]);
+			if (ticks == 0 || warriors == 0)
+				continue;
+			Console.WriteLine($"  {season,-10} {results.Sum(r => r.IdleWarriors[s]) / (float)ticks,5:0.0} / "
+							  + $"{warriors / (float)ticks:0.0}, fun {results.Sum(r => r.WarriorFun[s]) / warriors:0}");
+		}
+
 		Console.WriteLine();
 
 		Console.WriteLine("Hunting skill (cats born in the run, no medicine cats):");

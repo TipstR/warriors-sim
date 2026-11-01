@@ -25,7 +25,7 @@ public class TuningSetting {
 		DefaultValue = field.GetValue(null);
 	}
 
-	/// <summary>The name in the code, e.g. "TicksUntilExhausted".</summary>
+	/// <summary>The name in the code, e.g. "PatrolEnergyCost".</summary>
 	public string Name => _field.Name;
 
 	/// <summary>The group from the <see cref="TuningGroupAttribute" />, e.g. "Energy".</summary>
@@ -66,12 +66,12 @@ public static class TuningSettings {
 		.Select(f => new TuningSetting(f.Field, f.Attribute.Group))
 		.ToList();
 
-	/// <summary>The values grouped, e.g. "Energy" → TicksUntilExhausted, SleepEnergy, ...</summary>
+	/// <summary>The values grouped, e.g. "Energy" → PatrolEnergyCost, SleepEnergy, ...</summary>
 	public static IEnumerable<IGrouping<string, TuningSetting>> ByGroup() {
 		return All.GroupBy(s => s.Group);
 	}
 
-	/// <summary>Finds a value by its name, e.g. Get("TicksUntilExhausted"). Returns null if there is none.</summary>
+	/// <summary>Finds a value by its name, e.g. Get("PatrolEnergyCost"). Returns null if there is none.</summary>
 	public static TuningSetting Get(string name) {
 		return All.FirstOrDefault(s => s.Name == name);
 	}
