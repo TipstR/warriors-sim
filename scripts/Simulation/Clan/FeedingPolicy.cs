@@ -26,6 +26,7 @@ public record FeedingPolicy(
 	float Pragmatism,
 	float WarriorCode,
 	float FamineHunterPriority) {
+	
 	/// <summary>Starving cats first, then a mix of everything. In a famine, the hunters come first.</summary>
 	public static readonly FeedingPolicy Balanced = new(10f, 1f, 0.5f, 0.5f, 0.5f, 2f);
 
