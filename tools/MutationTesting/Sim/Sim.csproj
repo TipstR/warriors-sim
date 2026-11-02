@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The simulation as its own library, only for mutation testing. Stryker needs a project to mutate that the test
+    project references; the normal test project compiles the simulation files directly instead.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Same settings as the game project, so the simulation code compiles the same way -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AssemblyName>Sim</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\scripts\Simulation\**\*.cs" LinkBase="Simulation" />
+  </ItemGroup>
+
+</Project>

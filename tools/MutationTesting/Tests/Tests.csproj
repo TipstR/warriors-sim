@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The real unit tests (tests/WarriorsSim.Tests), compiled against the Sim library instead of the simulation files,
+    so Stryker can mutate the library. Not in the solution, so Rider doesn't show every test twice.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AssemblyName>Tests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\tests\WarriorsSim.Tests\**\*.cs"
+             Exclude="..\..\..\tests\WarriorsSim.Tests\bin\**;..\..\..\tests\WarriorsSim.Tests\obj\**"
+             LinkBase="Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sim\Sim.csproj" />
+  </ItemGroup>
+
+  <!-- Same versions as tests/WarriorsSim.Tests -->
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+</Project>

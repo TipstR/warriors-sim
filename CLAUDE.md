@@ -80,6 +80,8 @@ When moving a script, move its `.uid` file with it.
 - `tools/BalanceRunner/` – console program for balance tests (many seeds,
   many years). Compiles the simulation directly, like the tests; the Godot
   project ignores `tools/` too.
+- `tools/MutationTesting/` – mutation testing with Stryker.NET (`run.ps1`),
+  see `docs/TestPlan.md`. Not in the solution on purpose.
 - `docs/` – vision, milestone rules, handover, the user's own notes.
 - `logs/` – simulation logs (ignored by git).
 

@@ -29,6 +29,9 @@ logs/
 bin/
 obj/
 
+# Mutation testing reports (tools/MutationTesting)
+StrykerOutput/
+
 # IDE settings
 .idea/
 *.user
