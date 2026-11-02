@@ -242,6 +242,11 @@ patrols) may need tuning; the user wants to tune balance later.
 
 ## Other TODOs (priority order)
 
+0. **Test plan in progress: `docs/TestPlan.md`** (2026-11-02). Mutation
+   testing (`tools/MutationTesting/run.ps1`) found only 13% of code changes.
+   Packages 1–2 of 8 are done, continue with package 3. Package 7 (feeding
+   order) also covers TODO 2 below and needs the user's review.
+
 1. **Medicine is too strong.** Sickness kills only ~2 cats per run, catmint
    runs out ~12 times per run with almost no deaths. Goal: few deaths with a
    good medicine cat and catmint; a leaf-bare greencough outbreak without
@@ -284,6 +289,10 @@ patrols) may need tuning; the user wants to tune balance later.
 ## How to test
 
 - **Unit tests:** `dotnet test tests/WarriorsSim.Tests`.
+- **Mutation testing** (checks whether the unit tests notice small code
+  changes): `powershell -ExecutionPolicy Bypass -File
+  tools/MutationTesting/run.ps1 [Cats/Cat.cs ...] [-Survivors]`. All files
+  ~4–5 minutes, one file ~1 minute. See `docs/TestPlan.md`.
 - **Balance runs:** `dotnet run -c Release --project tools/BalanceRunner --
   100 30 [Name=value ...]` (~25 seconds). Prints Clans dying out, deaths by
   cause, hunting skill over a cat's life, how many reach 90+/95+, and checks
