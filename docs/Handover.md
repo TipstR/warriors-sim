@@ -244,8 +244,9 @@ patrols) may need tuning; the user wants to tune balance later.
 
 0. **Test plan in progress: `docs/TestPlan.md`** (2026-11-02). Mutation
    testing (`tools/MutationTesting/run.ps1`) found only 13% of code changes.
-   Packages 1–2 of 8 are done, continue with package 3. Package 7 (feeding
-   order) also covers TODO 2 below and needs the user's review.
+   Phase 1 (packages 1–8) is done: 96% on the tested files. Package 7
+   (feeding order) also covers TODO 2 below and needs the user's review of
+   the statements listed in the plan. Phase 2 (world rules) not started.
 
 1. **Medicine is too strong.** Sickness kills only ~2 cats per run, catmint
    runs out ~12 times per run with almost no deaths. Goal: few deaths with a

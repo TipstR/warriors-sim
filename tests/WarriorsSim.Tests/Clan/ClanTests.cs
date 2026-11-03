@@ -16,6 +16,11 @@ public class ClanTests {
 	}
 
 	[Fact]
+	public void New_TheClanHasItsName() {
+		Assert.Equal("ThunderClan", new Clan("ThunderClan").Name);
+	}
+
+	[Fact]
 	public void RecordDeath_MovesTheCatToTheDeadRightAway() {
 		var clan = new Clan("ThunderClan");
 		var died = new List<Cat>();

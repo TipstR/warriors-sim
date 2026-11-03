@@ -98,4 +98,47 @@ public class SkillTests {
 
 		Assert.Equal(30f, skill.Level, 3);
 	}
+
+	[Fact]
+	public void LearningFactor_FromTheLeastToTheMostGifted() {
+		Assert.Equal(Tuning.LeastGiftedLearningFactor, new Skill(0, 0).LearningFactor, 4);
+		Assert.Equal(Tuning.MostGiftedLearningFactor, new Skill(0, 100).LearningFactor, 4);
+	}
+
+	[Fact]
+	public void Improve_AGiftedCatLearnsMoreFromTheSameLesson() {
+		var gifted = new Skill(40, 90);
+		var plain = new Skill(40, 20);
+
+		gifted.Improve(5);
+		plain.Improve(5);
+
+		Assert.True(gifted.Level - 40 > plain.Level - 40);
+	}
+
+	[Fact]
+	public void Difficulty_FromABeginnerWhoLearnsEverythingToPerfection() {
+		Assert.Equal(1f, new Skill(0, 50).Difficulty, 4);
+		Assert.Equal(0f, new Skill(100, 50).Difficulty, 4);
+	}
+
+	[Fact]
+	public void Improve_ASkilledCatLearnsLessFromTheSameLesson() {
+		var beginner = new Skill(10, 50);
+		var expert = new Skill(80, 50);
+
+		beginner.Improve(5);
+		expert.Improve(5);
+
+		Assert.True(beginner.Level - 10 > expert.Level - 80);
+	}
+
+	[Fact]
+	public void Improve_NeverAboveTheCap() {
+		var skill = new Skill(38, 100);
+
+		skill.Improve(50, 40);
+
+		Assert.Equal(40f, skill.Level, 4);
+	}
 }

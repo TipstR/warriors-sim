@@ -113,4 +113,39 @@ public class FreshKillPileTests {
 		Assert.Equal("a shrew, 2 mice and a rabbit", Prey.Describe(prey));
 		Assert.Equal("nothing", Prey.Describe(new Prey[0]));
 	}
+
+	[Fact]
+	public void Describe_OtherKindsGetAnS() {
+		var prey = new[] { new Prey(PreyKind.Rabbit, 0), new Prey(PreyKind.Rabbit, 0) };
+
+		Assert.Equal("2 rabbits", Prey.Describe(prey));
+	}
+
+	[Fact]
+	public void FormatPortions_WithADotOnEveryComputer() {
+		Assert.Equal("1.5", Prey.FormatPortions(1.5f));
+		Assert.Equal("2", Prey.FormatPortions(2f));
+	}
+
+	[Fact]
+	public void Count_OnlyThePiecesThatAreThisFresh() {
+		var pile = new FreshKillPile();
+		pile.Add(Mouse(0));
+		pile.Add(Mouse(Day));
+		pile.Add(Mouse(Day + 1));
+
+		Assert.Equal(2, pile.Count(Freshness.Fresh, Day + 1));
+		Assert.Equal(1, pile.Count(Freshness.Stale, Day + 1));
+		Assert.Equal(0, pile.Count(Freshness.Crowfood, Day + 1));
+	}
+
+	[Fact]
+	public void EatPortion_AStartedPieceThatWentStaleIsNotFinishedFirst() {
+		var pile = new FreshKillPile();
+		pile.Add(new Prey(PreyKind.Rabbit, 0));
+		pile.EatPortion(0, out _);
+		pile.Add(Mouse(Day));
+
+		Assert.Equal(PreyKind.Mouse, pile.EatPortion(Day, out _).Kind);
+	}
 }

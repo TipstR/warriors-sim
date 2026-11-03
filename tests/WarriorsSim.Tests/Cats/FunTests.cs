@@ -19,6 +19,12 @@ public class FunTests {
 	}
 
 	[Fact]
+	public void BoredomFactor_FromHalfToOneAndAHalf() {
+		Assert.Equal(0.5f, Warrior(0).BoredomFactor, 4);
+		Assert.Equal(1.5f, Warrior(100).BoredomFactor, 4);
+	}
+
+	[Fact]
 	public void HuntAloneChance_ZeroWhenFunIsFull() {
 		Assert.Equal(0f, Warrior().HuntAloneChance);
 	}

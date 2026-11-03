@@ -76,14 +76,14 @@ mutation score of the file before and after.
 
 | # | Package | Test file | Status | Score |
 |---|---|---|---|---|
-| 1 | Clan: deaths, mates, leader, eating order tie | `Clan/ClanTests.cs` | **done** | 20% → 90% |
-| 2 | Cat: catch chance, energy, health | `Cats/HuntingTests.cs` | **done** (not measured yet) | (Cat.cs 28% → ?) |
-| 3 | Cat: food need, eating, starvation | `Cats/HungerTests.cs` | planned | |
-| 4 | Cat: family, pregnancy, names, ranks, dens | `Cats/FamilyTests.cs`, `Cats/RankTests.cs` | planned | |
-| 5 | Cat + Condition: sickness | `Health/ConditionTests.cs`, `Health/SicknessTests.cs` | planned | 0% → ? |
-| 6 | Herb store | `Health/HerbStoreTests.cs` | planned | 0% → ? |
-| 7 | Feeding order per leader style | `Clan/FeedingPolicyTests.cs` | planned, then **needs the user** | 0% → ? |
-| 8 | Small gaps: Skill, FreshKillPile, Prey | existing files | planned | 76/88/86% → ? |
+| 1 | Clan: deaths, mates, leader, eating order tie | `Clan/ClanTests.cs` | **done** | 20% → 100% |
+| 2 | Cat: catch chance, energy, health | `Cats/HuntingTests.cs` | **done** | Cat.cs 28% → 97% (2–5 together) |
+| 3 | Cat: food need, eating, starvation | `Cats/HungerTests.cs` | **done** | |
+| 4 | Cat: family, pregnancy, names, ranks, dens | `Cats/FamilyTests.cs`, `Cats/RankTests.cs` | **done** | |
+| 5 | Cat + Condition: sickness | `Health/ConditionTests.cs`, `Health/SicknessTests.cs` | **done** | Condition 0% → 100% |
+| 6 | Herb store | `Health/HerbStoreTests.cs` | **done** | 0% → 92% |
+| 7 | Feeding order per leader style | `Clan/FeedingPolicyTests.cs` | written, **needs the user** | 0% → 89%+ |
+| 8 | Small gaps: Skill, FreshKillPile, Prey | existing files | **done** | 76/88/86% → 91/94/93% |
 
 ### 1. Clan
 
@@ -205,3 +205,41 @@ just for tests.
   `CatsInEatingOrder`, which package 7 covers (a test where the scores
   differ). `Cat.cs` was not measured after package 2: run
   `run.ps1 Cats/Cat.cs -Survivors` and continue with package 3.
+- **2026-11-03, phase 1 written** (packages 3–8). 217 tests pass. One
+  mutation run over the 8 changed files: **96%** (342 of 357), was about
+  13% overall. Survivors left on purpose (they make no real difference):
+  - `Cat.cs`: `IsExhausted` (`< 1` vs `<= 1`), `Interpolate` at the exact
+    table points (both branches give the same value), the `- 0.01f` meal
+    limit in `Eat`, `ToString`.
+  - `Skill.cs`: `Level >= cap` and `Level > floor` (the `Math.Min`/`Max`
+    after them gives the same result).
+  - `FreshKillPile.ChooseNext`: `MaxBy` vs `MinBy` among started fresh
+    pieces. Two started fresh pieces can't exist (a started piece is always
+    finished first), so this can't be tested and doesn't matter.
+  - `Prey.cs`: `IsEaten` limit, `First` vs `FirstOrDefault`; `Herb.ToString`.
+  - `FeedingPolicy`: `nearDeath` divided vs multiplied. The tests only
+    compare cats, and both versions give the same order in every statement.
+- **Next:** the user reviews the statements of package 7 (below). Then
+  phase 2, or a full run of the tool to see the score over all files.
+
+### Statements for the user to confirm (package 7)
+
+Each is one test in `Clan/FeedingPolicyTests.cs`, written from what the
+code does now.
+
+- Balanced: a starving cat eats before anyone who isn't (kits, queens, the
+  best hunter in a famine); of two starving cats the one closer to death
+  first; a starving cat before one that just ate but is still close to
+  death; **an elder before a good hunter, but in a famine the hunter
+  first**.
+- Compassionate: a starving cat first; kits, queens, the sick and elders
+  before the best hunter, a young kit even in a famine; queens and the sick
+  before the frail (an elder); a newborn before an older kit.
+- Ruthless: the better hunter first; even a starving kit after a weak
+  warrior; an elder after every hunter; a hunter too sick to hunt after a
+  weak healthy one; apprentices judged by their gift; medicine cats (and
+  their apprentices) judged by healing.
+- By the code: kits, queens, elders, the sick, leader, deputy, warriors,
+  apprentices, even when the last are starving and even in a famine; the
+  medicine cat with the leader, its apprentice right after; a sick elder
+  still eats as an elder.
