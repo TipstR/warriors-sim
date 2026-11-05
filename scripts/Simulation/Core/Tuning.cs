@@ -594,6 +594,23 @@ public static class Tuning {
 	/// <summary>Below this energy, a cat can't do anything useful anymore.</summary>
 	[TuningGroup("Energy")] public static float EnergyPenaltyFull = 5f;
 
+	// Chores
+	/// <summary>
+	///     How many small chores (e.g. bringing prey) one cat does in a tick at most, so a single apprentice doesn't
+	///     feed the whole nursery and the elders next to its lesson.
+	/// </summary>
+	[TuningGroup("Chores")] public static int MaxChoresPerTick = 2;
+
+	/// <summary>Energy a small chore costs, on top of the cat's other work.</summary>
+	[TuningGroup("Chores")] public static float ChoreEnergyCost = 3f;
+
+	/// <summary>
+	///     A cat only takes a chore if it keeps at least this much energy afterwards, counting what it already used
+	///     this tick (10 for being awake, or 30 in all for a patrol). A medicine cat also keeps back what it needs
+	///     for caring for the sick or gathering herbs later in the tick. A tired apprentice leaves it to a warrior.
+	/// </summary>
+	[TuningGroup("Chores")] public static float ChoreMinEnergy = 40f;
+
 	// Fun
 	[TuningGroup("Fun")] public static float FunMax = 100f;
 

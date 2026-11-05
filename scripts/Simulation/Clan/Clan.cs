@@ -7,6 +7,7 @@ namespace WarriorsSim.Simulation;
 public class Clan {
 	private readonly List<Cat> _cats = new();
 	private readonly List<Cat> _dead = new();
+	private readonly List<Chore> _chores = new();
 
 	public Clan(string name) {
 		Name = name;
@@ -53,7 +54,29 @@ public class Clan {
 
 		_dead.Add(cat);
 		cat.Mate?.LoseMate();
+		_chores.RemoveAll(c => c.ForCat == cat);
 		CatDied?.Invoke(cat);
+	}
+
+	/// <summary>
+	///     The Clan's chores: every chore that is open right now, oldest first. In programming terms the
+	///     "blackboard": cats responsible for a chore take it from here. Later the UI can show it and the player can
+	///     take chores from it.
+	/// </summary>
+	public IReadOnlyList<Chore> Chores => _chores;
+
+	public void PostChore(Chore chore) {
+		_chores.Add(chore);
+	}
+
+	/// <summary>Takes a chore off the list, because it is done or not needed anymore.</summary>
+	public void RemoveChore(Chore chore) {
+		_chores.Remove(chore);
+	}
+
+	/// <summary>The open chore of this kind for this cat, or null.</summary>
+	public Chore FindChore(ChoreKind kind, Cat forCat) {
+		return _chores.FirstOrDefault(c => c.Kind == kind && c.ForCat == forCat);
 	}
 
 	/// <summary>How the Clan decides who eats first. Later this will come from the leader's personality.</summary>

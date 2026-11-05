@@ -6,6 +6,51 @@ agents' own memory doesn't move between computers.
 
 ## Current state (newest first)
 
+- **Chores, step 1: the Clan's chores and bringing prey** (2026-11-04,
+  review fixes 2026-11-05). Designed with the user in a grilling session; the words
+  are in `GLOSSARY.md`. `Chores/Chore.cs` (kind, the cat it's for, the tick
+  it was put up, size), `Clan.Chores` is the "blackboard" (open chores,
+  readable from outside for a later UI and the player), the rules are in
+  `Chores/World.Chores.cs`. The only chore so far is **bringing prey** to
+  cats who stay in their den (`Cat.StaysInDen`): queens in the nursery,
+  elders, confined cats, medicine-den patients. Healthy kits walk to the
+  pile themselves (user). The eating order still decides the piece, the
+  chore only who carries it. Ladder: the cat's mate, then the apprentice
+  with the most energy left, then anyone else who can (warriors, medicine
+  cats, leader; most energy first). A carrier must be awake, not stay in its
+  den itself, do at most `MaxChoresPerTick` (2), and keep `ChoreMinEnergy`
+  (40) after paying `ChoreEnergyCost` (3), counting what it already used
+  this tick (user: one apprentice doing every chore next to its lesson is
+  unrealistic, a warrior must step in). Small chores give no fun. If
+  nobody can carry, the piece stays on the pile for the next cats; next
+  tick the ladder tries again, and if still nobody comes, a cat who can
+  walk fetches it itself (Summary log "Nobody brought Brindleface food, so
+  she left her kits to fetch it."), a confined cat goes hungry. In a famine
+  elders and queens who hunted walk to the pile like the hunters.
+  `World.ChoreDone` (chore, carrier, piece) is for the camp later;
+  **the UI and the camp were not changed** (user), so the camp still shows
+  the queen walking to the pile (`CatAte` still fires). Moon summary and
+  BalanceRunner count the chores. 11 unit tests in `Chores/ChoreTests.cs`.
+  After a code review (2026-11-05): a starving cat who waits for a carrier
+  counts as "passed over"; medicine cats keep back energy for caring
+  (`CaringEnergyPerPatient × PatientsPerHealer`) or gathering, because they
+  do that after feeding; the possible carriers are listed once per feeding;
+  chores are only taken down in `RemoveFinishedBringPreyChores`. Cats back
+  from a patrol may carry (user: patrols are back before the Clan eats).
+  Nights don't count as waiting only because everyone sleeps; with night
+  shifts this changes (user).
+  Result (100 × 30): 1 died out, 5.3 starved per year (was 5.4 before
+  chores), sickness deaths 3.1 per run (2.6 before chores, 3.4 before the
+  review fixes; hunger makes sickness deadlier). Bringing prey ~3,500
+  times a year, by mates 28%, apprentices 27%, others 45%; a cat fetched it
+  itself 20.6 times a year (13.5 before medicine cats kept energy back);
+  confined cats missed 2.8 meals a year because nobody brought them.
+  **User: no balance changes for now** (means: no changes to existing
+  Tuning values; rule fixes are fine). Next chores (not
+  started): gathering moss, carrying out
+  crowfood, ticks for the elders (big chores that take the tick and slow
+  down training).
+
 - **Living-world overhaul, step 4 of 4: prey kinds** (2026-11-01, not
   committed yet). The overhaul is finished with this step. `PreyKind`:
   shrew (0.5 portions), mouse (1), vole (1), bird (1.5), squirrel (2),
@@ -273,12 +318,19 @@ patrols) may need tuning; the user wants to tune balance later.
    (autotiling) as a placeholder so the user can learn the terrain brush.
    The camp itself (`camp.tscn`, tiles, markers) is the user's: when asked to
    enlarge or change it, scale their shape, never redesign it.
-7. **UI is the user's area, don't change it unasked** (only minimal fixes when
-   a refactor breaks the build). Useful properties: `cat.Skills`,
+7. **The UI and the camp may be changed when a feature needs it, but ask
+   first** (user, 2026-11-04). The camp will be overhauled anyway once there
+   are more ticks per day, so a simulation change that breaks the camp's
+   look is fine for now. Useful properties: `cat.Skills`,
    `cat.Conditions`, `IsSick`, `IsConfined`, `InMedicineDen`, `Mentor`,
    `MentorFactor`, `cat.Skills[SkillType.Mentoring]`, `Skill.Peak`,
    `Clan.HerbStore.Doses(herb)`.
-8. **Later ideas the user wants:** warriors becoming medicine cats (like
+8. **More ticks per day (planned overhaul, user 2026-11-04):** "I hate that
+   only one thing happens every 6 hours." Not started. Small chores
+   (`ChoreSize.Small`, done in passing next to the tick's other work) are a
+   crutch for 6-hour ticks: with shorter ticks, carrying a mouse can become
+   a real short activity. The camp gets overhauled with it.
+9. **Later ideas the user wants:** warriors becoming medicine cats (like
    Cinderpelt), remembering every apprentice a cat trained, the rule that a
    deputy must have had an apprentice, loners and kittypets joining for new
    blood, "volunteer work" (warriors hunting for sport, practicing skills).

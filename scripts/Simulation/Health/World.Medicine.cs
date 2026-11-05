@@ -281,8 +281,7 @@ public partial class World {
 	///     energy for the trip (<see cref="Tuning.GatheringEnergyCost" />).
 	/// </summary>
 	private List<Cat> ChooseGatherers(List<Cat> healers) {
-		var store = Clan.HerbStore;
-		if (Enum.GetValues<Herb>().All(h => store.Doses(h) >= Tuning.HerbStoreTarget))
+		if (!HerbStoreIsLow())
 			return new List<Cat>();
 
 		var able = healers.Where(c => !IsSleeping(c) && c.Energy >= Tuning.GatheringEnergyCost).ToList();
@@ -294,6 +293,11 @@ public partial class World {
 		return anyPatients
 			? new List<Cat>()
 			: able.Where(c => c.Rank == Rank.MedicineCat).Take(1).ToList();
+	}
+
+	/// <summary>Whether the store has fewer doses than <see cref="Tuning.HerbStoreTarget" /> of any herb.</summary>
+	private bool HerbStoreIsLow() {
+		return Enum.GetValues<Herb>().Any(h => Clan.HerbStore.Doses(h) < Tuning.HerbStoreTarget);
 	}
 
 	/// <summary>

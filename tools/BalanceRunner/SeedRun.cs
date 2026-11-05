@@ -72,6 +72,16 @@ public class SeedResult {
 	public int HuntsAlone;
 	public long PortionsCaughtAlone;
 
+	/// <summary>
+	///     Bringing prey: chores done by mates, apprentices and others, how often a cat fetched it itself after waiting,
+	///     and how many meals confined cats missed because nobody brought them (one per cat and feeding tick).
+	/// </summary>
+	public int ChoresByMates;
+	public int ChoresByApprentices;
+	public int ChoresByOthers;
+	public int FetchedThemselves;
+	public int WentHungryInNest;
+
 	/// <summary>How many pieces of each kind of prey were caught.</summary>
 	public readonly Dictionary<PreyKind, int> CaughtByKind = new();
 
@@ -96,6 +106,10 @@ public static class SeedRun {
 
 	private static readonly Regex MoonPreyLine = new(@"portions caught: (\d+), crowfood thrown out: (\d+) portions, "
 													  + @"stale meals: (\d+), hunts alone: (\d+) \((\d+) portions\)");
+
+	private static readonly Regex MoonChoresLine = new(@"chores done: \d+ \(mates (\d+), apprentices (\d+), "
+													   + @"others (\d+)\), fetched it themselves: (\d+), "
+													   + @"went hungry in their nest: (\d+)");
 
 	private static readonly Regex HuntAloneLine = new(@"\| (.+) went hunting alone and caught [^(]* \(([\d.]+) portions\)");
 	private static int TicksPerMoon => Tuning.TicksPerDay * Tuning.DaysPerMoon;
@@ -211,6 +225,17 @@ public static class SeedRun {
 			result.StaleMeals += int.Parse(moonPrey.Groups[3].Value);
 			result.HuntsAlone += int.Parse(moonPrey.Groups[4].Value);
 			result.PortionsCaughtAlone += int.Parse(moonPrey.Groups[5].Value);
+
+			// Same line, further back
+			var chores = MoonChoresLine.Match(line);
+			if (chores.Success) {
+				result.ChoresByMates += int.Parse(chores.Groups[1].Value);
+				result.ChoresByApprentices += int.Parse(chores.Groups[2].Value);
+				result.ChoresByOthers += int.Parse(chores.Groups[3].Value);
+				result.FetchedThemselves += int.Parse(chores.Groups[4].Value);
+				result.WentHungryInNest += int.Parse(chores.Groups[5].Value);
+			}
+
 			return;
 		}
 

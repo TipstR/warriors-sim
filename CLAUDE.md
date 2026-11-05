@@ -55,6 +55,10 @@ When moving a script, move its `.uid` file with it.
     `StartingClans.cs` (ThunderClan from *Into the Wild*), `Den`.
   - `Health/`: `Condition.cs` (a sickness or injury), `Herb.cs` (herb store),
     sickness and medicine cats.
+  - `Chores/`: `Chore.cs` and `World.Chores.cs`: small tasks on the Clan's
+    chores (`Clan.Chores`, the "blackboard") that responsible cats take,
+    e.g. bringing prey to cats who stay in their den.
+- `GLOSSARY.md` – the domain words (queen in the nursery, chore, ...).
 - `ui/simulation_ui/` – `simulation_ui.tscn` + `SimulationUi.cs`: the dev tool
   and main scene (tabs: Clan, Tuning, Simulation). The user built the layout
   in the editor, the code finds nodes by unique name (`%Name`).

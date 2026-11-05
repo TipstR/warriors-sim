@@ -48,6 +48,18 @@ public static class Report {
 		if (perTrip.Count > 0)
 			Console.WriteLine($"  portions per trip alone, {string.Join(", ", perTrip)}");
 
+		var chores = results.Sum(r => (long)r.ChoresByMates + r.ChoresByApprentices + r.ChoresByOthers);
+		if (chores > 0) {
+			var perYear = seeds * (float)years;
+			Console.WriteLine($"Bringing prey: {chores / perYear:0} times a year, by mates "
+							  + $"{results.Sum(r => r.ChoresByMates) * 100f / chores:0}%, apprentices "
+							  + $"{results.Sum(r => r.ChoresByApprentices) * 100f / chores:0}%, others "
+							  + $"{results.Sum(r => r.ChoresByOthers) * 100f / chores:0}%; per year "
+							  + $"{results.Sum(r => r.FetchedThemselves) / perYear:0.0} times a cat fetched it itself, "
+							  + $"{results.Sum(r => r.WentHungryInNest) / perYear:0.0} meals a confined cat missed "
+							  + "(nobody brought them)");
+		}
+
 		Console.WriteLine("Warriors, deputy and leader by day (per tick): idle / all, average fun");
 		foreach (var season in Enum.GetValues<Season>()) {
 			var s = (int)season;

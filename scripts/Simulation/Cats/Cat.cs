@@ -74,6 +74,12 @@ public class Cat {
 	/// <summary>Nursing queens and queens close to giving birth stay in the nursery.</summary>
 	public bool IsInNursery => IsNursing || PregnancyDaysLeft <= Tuning.NurseryDaysBeforeBirth;
 
+	/// <summary>
+	///     Queens in the nursery, elders and sick cats (confined, or patients in the medicine den) stay in their den and
+	///     get their prey brought (<see cref="ChoreKind.BringPrey" />). Healthy kits walk to the pile themselves.
+	/// </summary>
+	public bool StaysInDen => IsInNursery || Rank == Rank.Elder || IsConfined || InMedicineDen;
+
 	/// <summary>Very young kits can only drink milk.</summary>
 	public bool CanEatPrey => !(Rank == Rank.Kit && AgeMoons < Tuning.FirstPreyAgeMoons);
 

@@ -56,7 +56,10 @@ public partial class World {
 	/// <summary>Called for every patrol the leader sends out, after it has hunted. Training patrols too.</summary>
 	public event Action<Patrol> PatrolSent;
 
-	/// <summary>Called when a cat eats a piece of prey from the fresh-kill pile.</summary>
+	/// <summary>
+	///     Called when a cat eats a piece of prey from the fresh-kill pile, also when another cat brought it (see
+	///     <see cref="ChoreDone" />).
+	/// </summary>
 	public event Action<Cat> CatAte;
 
 	public int Day { get; private set; } = 1;
@@ -868,14 +871,31 @@ public partial class World {
 
 		var ateStale = new List<Cat>();
 		var eatersOfBigPrey = new Dictionary<Prey, List<Cat>>();
+		// Cats in their den whose piece nobody could bring. Their piece stays on the pile for the next cats.
+		var waiting = new List<Cat>();
+		StartChores();
 		// Whoever comes first in the eating order takes the best piece, and started big prey is finished first
 		foreach (var cat in Clan.CatsInEatingOrder().Where(c => c.IsHungry && c.CanEatPrey)) {
-			var freshness = Clan.FreshKillPile.ChooseNext(TickNumber)?.FreshnessAt(TickNumber);
-			var piece = Clan.FreshKillPile.EatPortion(TickNumber, out var food);
-			if (piece == null) {
+			// Only look at the next piece: a cat who has to wait for a carrier must not take it from the pile
+			var nextPiece = Clan.FreshKillPile.ChooseNext(TickNumber);
+			if (nextPiece == null) {
 				wentHungry.Add(cat);
 				continue;
 			}
+
+			var freshness = nextPiece.FreshnessAt(TickNumber);
+			// The eating order decides the piece, the chore only who carries it
+			var delivery = ArrangePrey(cat, out var chore, out var carrier);
+			if (delivery == PreyDelivery.Waits) {
+				waiting.Add(cat);
+				continue;
+			}
+
+			var piece = Clan.FreshKillPile.EatPortion(TickNumber, out var food);
+			if (delivery == PreyDelivery.Brought)
+				FinishBringingPrey(chore, carrier, piece);
+			else if (delivery == PreyDelivery.FetchesItself)
+				FetchedItself(cat);
 
 			if (freshness == Freshness.Stale)
 				ateStale.Add(cat);
@@ -904,9 +924,14 @@ public partial class World {
 		if (wentHungry.Count > 0)
 			Log($"No prey left for {Names(wentHungry)}.");
 
+		LogWaiting(waiting);
+		_mealsMissedThisMoon += waiting.Count;
+		RemoveFinishedBringPreyChores(waiting.ToHashSet());
+
 		// The leader's feeding policy decided who got food. Tell the story of that decision.
 		var fedStarving = ate.Where(wasStarving.Contains).ToList();
-		var passedOverStarving = wentHungry.Where(wasStarving.Contains).ToList();
+		// A starving cat who waited for a carrier got nothing either
+		var passedOverStarving = wentHungry.Concat(waiting).Where(wasStarving.Contains).ToList();
 		var fedInstead = ate.Where(c => !wasStarving.Contains(c)).ToList();
 
 		if (passedOverStarving.Count > 0 && fedInstead.Count > 0) {
@@ -959,7 +984,7 @@ public partial class World {
 			+ $"meals missed: {_mealsMissedThisMoon:0}, times a cat starved: {_timesStarvedThisMoon}, "
 			+ $"times a cat was exhausted: {_timesExhaustedThisMoon}, "
 			+ $"pile: {PileText()}, average satiation: {averageSatiation:0}, "
-			+ $"starving now: {starving}, {HealthSummary()}", LogLevel.Summary);
+			+ $"starving now: {starving}, {HealthSummary()}, {ChoreSummary()}", LogLevel.Summary);
 
 		_portionsCaughtThisMoon = 0;
 		_crowfoodThisMoon = 0;
@@ -977,6 +1002,7 @@ public partial class World {
 		_starvationStackSumThisMoon = 0;
 		_catTicksThisMoon = 0;
 		ResetHealthStatistics();
+		ResetChoreStatistics();
 	}
 
 	private void AdvanceTime() {
