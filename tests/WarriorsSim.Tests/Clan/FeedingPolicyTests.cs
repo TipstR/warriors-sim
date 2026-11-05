@@ -53,8 +53,12 @@ public class FeedingPolicyTests {
 		};
 	}
 
+	/// <summary>
+	///     The second cat goes in first, so a full tie (same rule, score and hunger) keeps it in front and fails.
+	/// </summary>
 	private static void AssertEatsBefore(FeedingPolicy policy, Cat first, Cat second, bool famine = false) {
-		Assert.True(policy.Score(first, famine) > policy.Score(second, famine),
+		var order = policy.EatingOrder([second, first], famine).ToList();
+		Assert.True(order[0] == first,
 			$"{first} ({policy.Score(first, famine):0.00}) should eat before {second} ({policy.Score(second, famine):0.00})");
 	}
 

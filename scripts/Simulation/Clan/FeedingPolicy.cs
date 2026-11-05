@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WarriorsSim.Simulation;
 
@@ -8,7 +9,10 @@ namespace WarriorsSim.Simulation;
 ///     Every cat gets a score from these weights, and the highest score eats first.
 ///     Later, the weights will come from the leader's personality.
 /// </summary>
-/// <param name="StarvingFirst">Bonus for cats that are starving right now. A high value means starving cats always eat first.</param>
+/// <param name="StarvingFirst">
+///     Whether cats that are starving right now always eat before everyone else. The score only decides the order
+///     among the starving cats and among the rest.
+/// </param>
 /// <param name="Urgency">Weight for how close a cat is to death (starvation stacks).</param>
 /// <param name="Compassion">
 ///     Weight for protecting the weak: queens, the sick and the frail (young kits, old cats). Goes by how weak a cat
@@ -20,7 +24,7 @@ namespace WarriorsSim.Simulation;
 ///     Extra weight for the hunters during a famine, so the Clan stays able to hunt. Added to Pragmatism.
 /// </param>
 public record FeedingPolicy(
-	float StarvingFirst,
+	bool StarvingFirst,
 	float Urgency,
 	float Compassion,
 	float Pragmatism,
@@ -28,16 +32,16 @@ public record FeedingPolicy(
 	float FamineHunterPriority) {
 	
 	/// <summary>Starving cats first, then a mix of everything. In a famine, the hunters come first.</summary>
-	public static readonly FeedingPolicy Balanced = new(10f, 1f, 0.5f, 0.5f, 0.5f, 2f);
+	public static readonly FeedingPolicy Balanced = new(true, 1f, 0.5f, 0.5f, 0.5f, 2f);
 
 	/// <summary>Protects the weak, even when it costs the Clan (a Firestar). Only reluctantly favors hunters in a famine.</summary>
-	public static readonly FeedingPolicy Compassionate = new(10f, 1f, 2f, 0f, 0.5f, 0.5f);
+	public static readonly FeedingPolicy Compassionate = new(true, 1f, 2f, 0f, 0.5f, 0.5f);
 
 	/// <summary>Feeds whoever keeps the Clan alive. The weak die first (a Tigerclaw).</summary>
-	public static readonly FeedingPolicy Ruthless = new(0f, 0f, 0f, 2f, 0f, 2f);
+	public static readonly FeedingPolicy Ruthless = new(false, 0f, 0f, 2f, 0f, 2f);
 
 	/// <summary>Follows the warrior code to the letter, no matter who starves, even in a famine.</summary>
-	public static readonly FeedingPolicy ByTheCode = new(0f, 0f, 0f, 0f, 1f, 0f);
+	public static readonly FeedingPolicy ByTheCode = new(false, 0f, 0f, 0f, 1f, 0f);
 
 	/// <summary>All ready-made leader styles by name, e.g. for a dropdown in a settings screen.</summary>
 	public static readonly IReadOnlyDictionary<string, FeedingPolicy> Presets = new Dictionary<string, FeedingPolicy> {
@@ -47,14 +51,24 @@ public record FeedingPolicy(
 		["By the code"] = ByTheCode
 	};
 
+	/// <summary>
+	///     The cats in the order they get to eat: starving cats first if <see cref="StarvingFirst" /> is on, then by
+	///     score. With the same score, the hungriest cat eats first.
+	/// </summary>
+	/// <param name="famine">Whether the Clan is in a famine right now, see <see cref="Clan.IsInFamine" />.</param>
+	public IEnumerable<Cat> EatingOrder(IEnumerable<Cat> cats, bool famine) {
+		return cats.OrderByDescending(c => StarvingFirst && c.IsStarving)
+			.ThenByDescending(c => Score(c, famine))
+			.ThenBy(c => c.Satiation);
+	}
+
+	/// <summary>How much the leader wants this cat to eat, apart from the <see cref="StarvingFirst" /> rule.</summary>
 	/// <param name="famine">Whether the Clan is in a famine right now, see <see cref="Clan.IsInFamine" />.</param>
 	public float Score(Cat cat, bool famine) {
-		var starving = cat.IsStarving ? 1f : 0f;
 		var nearDeath = (float)cat.StarvationStacks / Tuning.StarvationStacksToDie;
 		var pragmatism = Pragmatism + (famine ? FamineHunterPriority : 0f);
 
-		return StarvingFirst * starving
-			   + Urgency * nearDeath
+		return Urgency * nearDeath
 			   + Compassion * Vulnerability(cat)
 			   + pragmatism * Usefulness(cat)
 			   + WarriorCode * WarriorCodeRank(cat);

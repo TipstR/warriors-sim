@@ -84,11 +84,10 @@ public class Clan {
 
 	/// <summary>
 	///     Cats in the order they get to eat when there isn't enough prey for everyone, decided by the
-	///     <see cref="FeedingPolicy" />. With the same score, the hungriest cat eats first.
+	///     <see cref="FeedingPolicy" />.
 	/// </summary>
 	public IEnumerable<Cat> CatsInEatingOrder() {
-		var famine = IsInFamine;
-		return _cats.OrderByDescending(c => FeedingPolicy.Score(c, famine)).ThenBy(c => c.Satiation);
+		return FeedingPolicy.EatingOrder(_cats, IsInFamine);
 	}
 
 	/// <summary>
